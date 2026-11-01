@@ -1,9 +1,13 @@
 import type { AttendanceStatus, Employee, LineItem, OutputKey, Project, Role, SceneEntry, WorkKind, WorkStatus } from './types'
 
-// Typed client for the Daily Log API in /backend. The base URL comes from
-// VITE_API_URL (frontend/.env locally, Vercel environment variables in prod).
+// Typed client for the Daily Log API (dailylogback). The base URL comes from
+// VITE_API_URL (.env locally, Vercel environment variables in production).
 const BASE_URL = String(import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
 const TOKEN_KEY = 'dl-token'
+
+// Fired on window when the API rejects the saved token, so the app can
+// return to the sign-in screen.
+export const SESSION_EXPIRED = 'dl-session-expired'
 
 export type PlanFlag = 'leave' | 'early' | 'late' | 'wfh'
 
@@ -103,6 +107,10 @@ export class ApiError extends Error {
   }
 }
 
+export function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Something went wrong. Try again.'
+}
+
 export function getToken() {
   try {
     return localStorage.getItem(TOKEN_KEY)
@@ -131,18 +139,26 @@ function withQuery(path: string, params: object = {}) {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken()
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    throw new ApiError(0, "Can't reach the server. Check your connection and try again.")
+  }
   if (response.status === 204) return undefined as T
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    if (response.status === 401) setToken(null)
+    if (response.status === 401 && token) {
+      setToken(null)
+      window.dispatchEvent(new Event(SESSION_EXPIRED))
+    }
     throw new ApiError(response.status, data?.error || 'Something went wrong. Try again.')
   }
   return data as T

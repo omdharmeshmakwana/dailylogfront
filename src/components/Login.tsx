@@ -1,39 +1,36 @@
 import { useState } from 'react'
-import type { Employee, Role, Theme } from '../types'
+import { api, errorMessage, type SessionUser } from '../api'
+import { SLOW_NOTE, useSlow } from '../hooks'
+import type { Theme } from '../types'
 
 interface Props {
-  employees: Employee[]
   theme: Theme
   onToggleTheme: () => void
-  onSignIn: (session: { role: Role; name: string }) => void
+  onSignIn: (user: SessionUser) => void
 }
 
-export default function Login({ employees, theme, onToggleTheme, onSignIn }: Props) {
-  const [value, setValue] = useState('gauri@studio.ai')
+export default function Login({ theme, onToggleTheme, onSignIn }: Props) {
+  const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const slow = useSlow(busy)
 
-  const submit = (event: React.FormEvent) => {
+  // The API decides the role from the account and returns the same messages
+  // the old in-browser check used.
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     const clean = value.trim()
     if (!clean) {
       setError('Enter your name or email to continue.')
       return
     }
-    if (/^manager(@|$)/i.test(clean)) {
-      onSignIn({ role: 'manager', name: 'Manager' })
-      return
+    setBusy(true)
+    try {
+      onSignIn(await api.login(clean))
+    } catch (reason) {
+      setError(errorMessage(reason))
+      setBusy(false)
     }
-    const prefix = clean.split('@')[0].replace(/[._-]+/g, ' ').toLowerCase()
-    const match = employees.find((employee) => employee.email.toLowerCase() === clean.toLowerCase() || employee.name.toLowerCase() === prefix)
-    if (!match) {
-      setError("We couldn't find that name or email in the team list.")
-      return
-    }
-    if (!match.active) {
-      setError(`${match.name}'s account is inactive. Ask your manager to reactivate it.`)
-      return
-    }
-    onSignIn({ role: 'employee', name: match.name })
   }
 
   return (
@@ -57,12 +54,12 @@ export default function Login({ employees, theme, onToggleTheme, onSignIn }: Pro
               setValue(event.target.value)
               setError('')
             }}
-            placeholder="gauri@studio.ai"
+            placeholder="name@company.com"
             autoComplete="username"
           />
           {error ? <p className="form-error">{error}</p> : null}
-          <button className="button button--primary button--full" type="submit">Sign in</button>
-          <p className="login-note">Your view is set by your email. Demo: gauri@studio.ai (employee) or manager@studio.ai.</p>
+          <button className="button button--primary button--full" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+          <p className="login-note">{slow ? SLOW_NOTE : 'Your view is set by your email.'}</p>
         </form>
         <button className="button button--text theme-login" type="button" onClick={onToggleTheme}>
           Switch to {theme === 'light' ? 'dark' : 'light'} mode

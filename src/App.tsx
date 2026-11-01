@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api, ApiError, getToken, SESSION_EXPIRED, type SessionUser } from './api'
 import Attendance from './components/Attendance'
 import Dashboard from './components/Dashboard'
 import EmployeeEod from './components/EmployeeEod'
@@ -6,13 +7,11 @@ import Employees from './components/Employees'
 import Login from './components/Login'
 import Projects from './components/Projects'
 import TopBar from './components/TopBar'
-import { initialEmployees, initialProjects } from './data'
-import type { AttendanceRecord, Employee, ManagerPage, Project, Role, Theme } from './types'
+import { SLOW_NOTE, useSlow } from './hooks'
+import type { ManagerPage, Theme } from './types'
 
-interface Session {
-  role: Role
-  name: string
-}
+// Left behind by the earlier version that kept all data in the browser.
+const LEGACY_KEYS = ['dl-session', 'dl-employees', 'dl-projects', 'dl-attendance', 'dl-holidays']
 
 function readStored<T>(key: string, fallback: T): T {
   try {
@@ -24,28 +23,44 @@ function readStored<T>(key: string, fallback: T): T {
 }
 
 export default function App() {
-  const demoRole = new URLSearchParams(window.location.search).get('demo')
-  const demoPage = new URLSearchParams(window.location.search).get('page') as ManagerPage | null
   const [theme, setTheme] = useState<Theme>(() => readStored('dl-theme', 'light'))
-  const [session, setSession] = useState<Session | null>(() => demoRole === 'manager' ? { role: 'manager', name: 'Manager' } : demoRole === 'employee' ? { role: 'employee', name: 'Gauri' } : readStored('dl-session', null))
-  const [page, setPage] = useState<ManagerPage>(() => demoPage || readStored('dl-page', 'dashboard'))
-  const [employees, setEmployees] = useState<Employee[]>(() => readStored('dl-employees', initialEmployees))
-  const [projects, setProjects] = useState<Project[]>(() => readStored('dl-projects', initialProjects))
-  const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>(() => readStored('dl-attendance', {}))
-  const [holidays, setHolidays] = useState<Record<string, true>>(() => readStored('dl-holidays', { '2026-10-02': true, '2026-10-20': true }))
+  const [session, setSession] = useState<SessionUser | null>(null)
+  const [restoring, setRestoring] = useState(() => Boolean(getToken()))
+  const [page, setPage] = useState<ManagerPage>(() => readStored('dl-page', 'dashboard'))
   const [toast, setToast] = useState('')
+  const slowRestore = useSlow(restoring)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('dl-theme', JSON.stringify(theme))
   }, [theme])
 
-  useEffect(() => localStorage.setItem('dl-session', JSON.stringify(session)), [session])
   useEffect(() => localStorage.setItem('dl-page', JSON.stringify(page)), [page])
-  useEffect(() => localStorage.setItem('dl-employees', JSON.stringify(employees)), [employees])
-  useEffect(() => localStorage.setItem('dl-projects', JSON.stringify(projects)), [projects])
-  useEffect(() => localStorage.setItem('dl-attendance', JSON.stringify(attendance)), [attendance])
-  useEffect(() => localStorage.setItem('dl-holidays', JSON.stringify(holidays)), [holidays])
+
+  // Resume the saved session, if any.
+  useEffect(() => {
+    try {
+      LEGACY_KEYS.forEach((key) => localStorage.removeItem(key))
+    } catch {
+      // Storage unavailable; nothing to clean up.
+    }
+    if (!getToken()) return
+    api.me()
+      .then(setSession)
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 403) api.logout()
+      })
+      .finally(() => setRestoring(false))
+  }, [])
+
+  useEffect(() => {
+    const expire = () => {
+      setSession(null)
+      setToast('Your session ended. Sign in again.')
+    }
+    window.addEventListener(SESSION_EXPIRED, expire)
+    return () => window.removeEventListener(SESSION_EXPIRED, expire)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -53,24 +68,33 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  const activeEmployee = useMemo(
-    () => employees.find((employee) => employee.name === session?.name),
-    [employees, session],
-  )
+  const toggleTheme = () => setTheme((value) => (value === 'light' ? 'dark' : 'light'))
 
   const signOut = () => {
+    api.logout()
     setSession(null)
-    localStorage.removeItem('dl-session')
+  }
+
+  const toastElement = (
+    <div className={`toast ${toast ? 'toast--show' : ''}`} role="status" aria-live="polite">
+      {toast}
+    </div>
+  )
+
+  if (restoring) {
+    return (
+      <main className="login-page">
+        <p className="login-note" role="status">{slowRestore ? `Signing you in… ${SLOW_NOTE}` : 'Signing you in…'}</p>
+      </main>
+    )
   }
 
   if (!session) {
     return (
-      <Login
-        employees={employees}
-        theme={theme}
-        onToggleTheme={() => setTheme((value) => (value === 'light' ? 'dark' : 'light'))}
-        onSignIn={setSession}
-      />
+      <>
+        <Login theme={theme} onToggleTheme={toggleTheme} onSignIn={setSession} />
+        {toastElement}
+      </>
     )
   }
 
@@ -82,40 +106,17 @@ export default function App() {
         name={session.name}
         theme={theme}
         onPage={setPage}
-        onToggleTheme={() => setTheme((value) => (value === 'light' ? 'dark' : 'light'))}
+        onToggleTheme={toggleTheme}
         onSignOut={signOut}
       />
 
-      {session.role === 'employee' && activeEmployee ? (
-        <EmployeeEod employee={activeEmployee} projects={projects} onToast={setToast} />
-      ) : null}
+      {session.role === 'employee' ? <EmployeeEod user={session} onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'dashboard' ? <Dashboard onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'attendance' ? <Attendance onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'projects' ? <Projects onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'employees' ? <Employees onToast={setToast} /> : null}
 
-      {session.role === 'manager' && page === 'dashboard' ? (
-        <Dashboard employees={employees} projects={projects} onToast={setToast} />
-      ) : null}
-
-      {session.role === 'manager' && page === 'attendance' ? (
-        <Attendance
-          employees={employees}
-          attendance={attendance}
-          holidays={holidays}
-          onAttendance={setAttendance}
-          onHolidays={setHolidays}
-          onToast={setToast}
-        />
-      ) : null}
-
-      {session.role === 'manager' && page === 'projects' ? (
-        <Projects projects={projects} onProjects={setProjects} onToast={setToast} />
-      ) : null}
-
-      {session.role === 'manager' && page === 'employees' ? (
-        <Employees employees={employees} onEmployees={setEmployees} onToast={setToast} />
-      ) : null}
-
-      <div className={`toast ${toast ? 'toast--show' : ''}`} role="status" aria-live="polite">
-        {toast}
-      </div>
+      {toastElement}
     </div>
   )
 }

@@ -1,6 +1,13 @@
 # Daily Log — React app
 
-The design handoff has been converted into a production-buildable Vite + React + TypeScript app. It includes the employee EOD workflow, manager dashboard, attendance grid and CSV export, project and employee management, dark mode, responsive layouts, and local persistence.
+The design handoff has been converted into a production-buildable Vite + React + TypeScript app. It includes the employee EOD workflow, manager dashboard, attendance grid and CSV export, project and employee management, dark mode and responsive layouts. All data comes from the Daily Log API (the `dailylogback` repo), which stores it in Neon.
+
+## Configure
+
+`VITE_API_URL` points the app at the API (no trailing slash):
+
+- **Vercel:** Project → Settings → Environment Variables, e.g. `https://daily-log-api.onrender.com`. Redeploy after changing it; Vite bakes it in at build time.
+- **Locally:** defaults to `http://localhost:4000`. To change it, create `.env` with `VITE_API_URL=...`.
 
 ## Run locally
 
@@ -11,10 +18,7 @@ npm run dev
 
 Create the production bundle with `npm run build`, then inspect it locally with `npm run preview`.
 
-Demo sign-ins:
-
-- Employee: `gauri@studio.ai`
-- Manager: `manager@studio.ai`
+Sign in with any email in the `employees` table: the manager created by `schema.sql`, anyone added on the Employees page, or the demo team from `seed.sql` (e.g. `gauri@studio.ai`).
 
 The original HTML prototype and reference screenshots remain in `prototype/` and `screenshots/`.
 
