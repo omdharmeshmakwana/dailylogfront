@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{color-scheme:light;--bg:oklch(0.972 0.005 80);--surface:oklch(0.995 0.002 80);--surface-2:oklch(0.95 0.006 80);--ink:oklch(0.24 0.012 260);--ink-2:oklch(0.38 0.012 260);--muted:oklch(0.5 0.012 260);--line:oklch(0.91 0.006 80);--line-2:oklch(0.85 0.008 80);--accent:oklch(0.48 0.1 175);--on-accent:#fff;--accent-soft:oklch(0.94 0.035 175);--ok:oklch(0.47 0.12 150);--ok-soft:oklch(0.94 0.05 150);--danger:oklch(0.52 0.18 25);--danger-soft:oklch(0.95 0.035 25);--warn:oklch(0.5 0.12 65);--warn-soft:oklch(0.95 0.055 85);--info:oklch(0.5 0.13 245);--info-soft:oklch(0.94 0.035 245);--violet:oklch(0.5 0.15 300);--violet-soft:oklch(0.94 0.04 300);--hol:oklch(0.45 0.02 260);--hol-soft:oklch(0.91 0.01 260);--weekend:oklch(0.945 0.005 80);--shadow:0 1px 2px oklch(0.2 0.01 260 / 0.05)}
+[data-theme="dark"]{color-scheme:dark;--bg:oklch(0.17 0.006 260);--surface:oklch(0.205 0.007 260);--surface-2:oklch(0.245 0.008 260);--ink:oklch(0.95 0.004 80);--ink-2:oklch(0.84 0.006 80);--muted:oklch(0.7 0.01 260);--line:oklch(0.285 0.008 260);--line-2:oklch(0.36 0.01 260);--accent:oklch(0.76 0.11 175);--on-accent:oklch(0.18 0.02 175);--accent-soft:oklch(0.3 0.05 175);--ok:oklch(0.78 0.13 150);--ok-soft:oklch(0.3 0.06 150);--danger:oklch(0.75 0.15 25);--danger-soft:oklch(0.31 0.07 25);--warn:oklch(0.82 0.12 75);--warn-soft:oklch(0.32 0.06 75);--info:oklch(0.77 0.11 245);--info-soft:oklch(0.3 0.06 245);--violet:oklch(0.78 0.12 300);--violet-soft:oklch(0.31 0.07 300);--hol:oklch(0.8 0.01 260);--hol-soft:oklch(0.32 0.008 260);--weekend:oklch(0.225 0.006 260);--shadow:none}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:var(--accent)} a:hover{color:var(--ink)}
+button{font:inherit;cursor:pointer} input,select,textarea{font:inherit}
+button:disabled,select:disabled{cursor:not-allowed;opacity:.55}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif;">
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Login" style="min-height:100vh;display:grid;place-items:center;padding:24px 16px;">
+  <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:9px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Geist Mono',monospace;font-weight:600;font-size:13px;">DL</div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.01em;">Daily Log</div>
+        <div style="font-size:13px;color:var(--muted);">End-of-day updates for the studio</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow);">
+      <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-0.02em;">Sign in</h1>
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Name or email</span>
+        <input value="{{ loginVal }}" onChange="{{ onLoginVal }}" onKeyDown="{{ onLoginKey }}" placeholder="gauri@studio.ai" style="height:46px;padding:0 12px;border-radius:9px;border:1px solid {{ loginBorder }};background:var(--surface);color:var(--ink);font-size:15px;outline:none;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);">
+      </label>
+      <sc-if value="{{ hasLoginErr }}"><div style="font-size:13px;color:var(--danger);margin-top:-8px;">{{ loginErr }}</div></sc-if>
+      <button onClick="{{ signIn }}" style="height:46px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:600;" style-hover="filter:brightness(1.07);">Sign in</button>
+      <p style="margin:0;font-size:13px;color:var(--muted);text-wrap:pretty;">{{ loginNote }}</p>
+    </div>
+    <button onClick="{{ toggleTheme }}" style="align-self:center;border:none;background:transparent;color:var(--muted);font-size:13px;padding:8px;" style-hover="color:var(--ink);">{{ themeLabel }}</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+<header style="position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line);">
+  <div style="max-width:1280px;margin:0 auto;padding:0 16px;height:60px;display:flex;align-items:center;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <div style="width:28px;height:28px;border-radius:7px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Geist Mono',monospace;font-weight:600;font-size:11px;">DL</div>
+      <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em;">Daily Log</span>
+    </div>
+    <nav style="display:flex;gap:2px;overflow-x:auto;flex:1;min-width:0;">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="0">
+        <button onClick="{{ item.onClick }}" style="height:36px;padding:0 12px;border:none;border-radius:8px;font-size:14px;font-weight:500;white-space:nowrap;background:{{ item.bg }};color:{{ item.fg }};" style-hover="color:var(--ink);">{{ item.label }}</button>
+      </sc-for>
+    </nav>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <button onClick="{{ toggleTheme }}" style="height:36px;padding:0 10px;border:1px solid var(--line-2);border-radius:8px;background:transparent;color:var(--ink-2);font-size:13px;" style-hover="background:var(--surface-2);">{{ themeShort }}</button>
+      <div style="display:flex;align-items:center;gap:8px;padding-left:6px;">
+        <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:600;">{{ userInitial }}</span>
+      </div>
+      <button onClick="{{ signOut }}" style="height:36px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;" style-hover="color:var(--ink);background:var(--surface-2);">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<sc-if value="{{ isEmployee }}">
+<main data-screen-label="My EOD" style="max-width:780px;margin:0 auto;padding:28px 16px 96px;display:flex;flex-direction:column;gap:16px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;">
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+      <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.025em;">My EOD · {{ todayLabel }}</h1>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--muted);">
+        <span style="color:var(--ink);font-weight:500;">{{ empName }}</span>
+      </div>
+    </div>
+    <span style="display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;background:{{ badge.bg }};color:{{ badge.fg }};"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span>{{ badge.text }}</span>
+  </div>
+
+  <sc-if value="{{ showBanner }}">
+    <div role="alert" style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:{{ banner.bg }};color:{{ banner.fg }};">
+      <span style="font-weight:700;font-size:15px;line-height:22px;">!</span>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="font-size:15px;font-weight:600;">{{ banner.title }}</div>
+        <div style="font-size:14px;color:var(--ink-2);text-wrap:pretty;">{{ banner.text }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ editing }}" hint-placeholder-val="{{ true }}">
+    <sc-for list="{{ cards }}" as="card" hint-placeholder-count="1">
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:26px;height:26px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font-family:'Geist Mono',monospace;font-size:13px;font-weight:600;">{{ card.n }}</span>
+            <span style="font-size:16px;font-weight:600;">Scene entry</span>
+          </div>
+          <sc-if value="{{ card.canRemove }}">
+            <button onClick="{{ card.onRemove }}" style="height:36px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;" style-hover="color:var(--danger);background:var(--danger-soft);">Remove scene</button>
+          </sc-if>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;">
+          <label style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Project</span>
+            <select value="{{ card.project }}" onChange="{{ card.onProject }}" style="height:46px;padding:0 10px;border-radius:9px;border:1px solid {{ card.bProject }};background:var(--surface);color:var(--ink);font-size:15px;width:100%;">{{ card.projectOpts }}</select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Episode</span>
+            <select value="{{ card.episode }}" onChange="{{ card.onEpisode }}" disabled="{{ card.noProject }}" style="height:46px;padding:0 10px;border-radius:9px;border:1px solid {{ card.bEpisode }};background:var(--surface);color:var(--ink);font-size:15px;width:100%;">{{ card.episodeOpts }}</select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Scene</span>
+            <input value="{{ card.scene }}" onChange="{{ card.onScene }}" placeholder="SC 06, SC 07" style="height:46px;padding:0 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;outline:none;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);">
+          </label>
+        </div>
+
+        <label style="display:flex;flex-direction:column;gap:6px;max-width:280px;">
+          <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Kind of work</span>
+          <select value="{{ card.kind }}" onChange="{{ card.onKind }}" style="height:46px;padding:0 10px;border-radius:9px;border:1px solid {{ card.bKind }};background:var(--surface);color:var(--ink);font-size:15px;width:100%;">{{ card.kindOpts }}</select>
+        </label>
+
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:12px;background:var(--surface-2);border:1px solid {{ card.bWork }};">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Work type</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;border-radius:10px;background:var(--bg);border:1px solid var(--line);min-width:200px;">
+              <button onClick="{{ card.onImage }}" style="height:38px;border:none;border-radius:7px;font-size:14px;font-weight:600;background:{{ card.img.bg }};color:{{ card.img.fg }};box-shadow:{{ card.img.sh }};">Image</button>
+              <button onClick="{{ card.onClip }}" style="height:38px;border:none;border-radius:7px;font-size:14px;font-weight:600;background:{{ card.clip.bg }};color:{{ card.clip.fg }};box-shadow:{{ card.clip.sh }};">Clip</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <sc-for list="{{ card.chips }}" as="chip" hint-placeholder-count="4">
+              <sc-if value="{{ chip.off }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ chip.onToggle }}" style="height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;" style-hover="border-color:var(--accent);"><span style="color:var(--muted);font-size:17px;line-height:1;">+</span>{{ chip.label }}</button>
+              </sc-if>
+              <sc-if value="{{ chip.on }}">
+                <div style="display:flex;align-items:center;gap:4px;height:48px;padding:0 4px;border-radius:12px;border:1.5px solid var(--accent);background:var(--accent-soft);">
+                  <button onClick="{{ chip.onToggle }}" aria-label="Deselect {{ chip.label }}" style="height:40px;padding:0 8px 0 8px;border:none;border-radius:8px;background:transparent;color:var(--ink);font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                    <span style="width:18px;height:18px;border-radius:5px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:11px;">✓</span>{{ chip.label }}
+                  </button>
+                  <div style="display:flex;align-items:center;background:var(--surface);border-radius:9px;border:1px solid var(--line);">
+                    <button onClick="{{ chip.onDec }}" aria-label="Decrease {{ chip.label }}" style="width:40px;height:38px;border:none;border-radius:8px;background:transparent;color:var(--ink);font-size:20px;line-height:1;" style-hover="background:var(--surface-2);">−</button>
+                    <span style="min-width:30px;text-align:center;font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;">{{ chip.count }}</span>
+                    <button onClick="{{ chip.onInc }}" aria-label="Increase {{ chip.label }}" style="width:40px;height:38px;border:none;border-radius:8px;background:transparent;color:var(--ink);font-size:20px;line-height:1;" style-hover="background:var(--surface-2);">+</button>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-for>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">What I made today</span>
+            <textarea value="{{ card.text }}" onChange="{{ card.onText }}" placeholder="{{ card.textPh }}" rows="2" style="padding:10px 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;line-height:1.45;outline:none;resize:vertical;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);"></textarea>
+          </label>
+          <sc-if value="{{ card.hasErr }}"><div style="font-size:13px;color:var(--danger);font-weight:500;">{{ card.err }}</div></sc-if>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button onClick="{{ card.onCancel }}" style="height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;" style-hover="background:var(--bg);">Cancel</button>
+            <button onClick="{{ card.onSave }}" style="height:42px;padding:0 18px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-size:14px;font-weight:600;" style-hover="background:var(--accent-soft);">Save</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ card.hasLines }}">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Logged for this scene · {{ card.lineCount }}</span>
+            <sc-for list="{{ card.lines }}" as="line" hint-placeholder-count="1">
+              <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 8px 12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);">
+                <span style="flex-shrink:0;margin-top:1px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);">{{ line.tag }}</span>
+                <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+                  <span style="font-size:14px;font-weight:600;">{{ line.summary }}</span>
+                  <span style="font-size:14px;color:var(--muted);text-wrap:pretty;">{{ line.text }}</span>
+                </div>
+                <button onClick="{{ line.onRemove }}" aria-label="Remove line" style="flex-shrink:0;width:36px;height:36px;margin-top:-6px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:18px;" style-hover="background:var(--danger-soft);color:var(--danger);">×</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ card.hasLinesMsg }}"><div style="font-size:13px;color:var(--danger);font-weight:500;">{{ card.linesMsg }}</div></sc-if>
+
+        <label style="display:flex;flex-direction:column;gap:6px;max-width:280px;">
+          <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Status</span>
+          <select value="{{ card.status }}" onChange="{{ card.onStatus }}" style="height:46px;padding:0 10px;border-radius:9px;border:1px solid {{ card.bStatus }};background:var(--surface);color:var(--ink);font-size:15px;width:100%;">{{ card.statusOpts }}</select>
+        </label>
+      </section>
+    </sc-for>
+
+    <button onClick="{{ addCard }}" style="height:52px;border-radius:14px;border:1.5px dashed var(--line-2);background:transparent;color:var(--ink-2);font-size:15px;font-weight:500;" style-hover="border-color:var(--accent);color:var(--accent);">+ Add another scene</button>
+
+    <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow);">
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Suggestion / remarks / feedback <span style="color:var(--muted);font-weight:400;">· optional</span></span>
+        <textarea value="{{ remarks }}" onChange="{{ onRemarks }}" rows="2" placeholder="Anything blocking you, or ideas for the team" style="padding:10px 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;line-height:1.45;outline:none;resize:vertical;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);"></textarea>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Tomorrow's plan and availability <span style="color:var(--muted);font-weight:400;">· optional</span></span>
+        <textarea value="{{ plan }}" onChange="{{ onPlan }}" rows="2" placeholder="Work plan, leaving early, coming late, leave…" style="padding:10px 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;line-height:1.45;outline:none;resize:vertical;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);"></textarea>
+      </label>
+    </section>
+
+    <sc-if value="{{ hasSubmitErr }}"><div role="alert" style="padding:12px 14px;border-radius:10px;background:var(--danger-soft);color:var(--danger);font-size:14px;font-weight:500;">{{ submitErr }}</div></sc-if>
+    <sc-if value="{{ notConfirming }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ onSubmit }}" style="height:54px;border:none;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:16px;font-weight:600;" style-hover="filter:brightness(1.07);">Submit EOD</button>
+    </sc-if>
+    <sc-if value="{{ confirming }}">
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:16px;border:1.5px solid var(--accent);background:var(--surface);">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:17px;font-weight:600;">Submit today's EOD?</div>
+          <div style="font-size:14px;color:var(--muted);">{{ confirmSummary }}</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;">
+          <button onClick="{{ backToEdit }}" style="height:46px;padding:0 18px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;" style-hover="background:var(--surface-2);">Keep editing</button>
+          <button onClick="{{ confirmSubmit }}" style="height:46px;padding:0 22px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:600;" style-hover="filter:brightness(1.07);">Confirm and submit</button>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isDone }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:14px;background:var(--ok-soft);">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="font-size:16px;font-weight:600;color:var(--ok);">EOD submitted at {{ submittedAt }}</div>
+        <div style="font-size:14px;color:var(--ink-2);">Thanks, {{ empName }}. Your manager can see it on the dashboard now.</div>
+      </div>
+      <button onClick="{{ editAgain }}" style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;" style-hover="background:var(--surface-2);">Edit EOD</button>
+    </div>
+    <sc-for list="{{ doneCards }}" as="dc" hint-placeholder-count="1">
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:16px;font-weight:600;">{{ dc.title }}</span>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);">{{ dc.kind }}</span>
+            <span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ dc.stBg }};color:{{ dc.stFg }};">{{ dc.status }}</span>
+          </div>
+        </div>
+        <sc-for list="{{ dc.lines }}" as="l" hint-placeholder-count="1">
+          <div style="display:flex;flex-direction:column;gap:2px;padding-top:10px;border-top:1px solid var(--line);">
+            <span style="font-size:14px;font-weight:600;">{{ l.summary }}</span>
+            <span style="font-size:14px;color:var(--muted);">{{ l.text }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-for>
+    <sc-for list="{{ doneNotes }}" as="dn" hint-placeholder-count="0">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);">
+        <span style="font-size:13px;font-weight:500;color:var(--muted);">{{ dn.label }}</span>
+        <span style="font-size:15px;text-wrap:pretty;">{{ dn.text }}</span>
+      </div>
+    </sc-for>
+  </sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{ isDashboard }}">
+<main data-screen-label="Dashboard" style="max-width:1280px;margin:0 auto;padding:28px 16px 80px;display:flex;flex-direction:column;gap:20px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.025em;">Dashboard</h1>
+      <span style="font-size:14px;color:var(--muted);">{{ dashSub }}</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+      <input type="date" value="{{ dDate }}" max="{{ todayKey }}" onChange="{{ onDate }}" style="height:40px;padding:0 10px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;">
+      <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface-2);">
+        <sc-for list="{{ periods }}" as="p" hint-placeholder-count="3">
+          <button onClick="{{ p.onClick }}" style="height:34px;padding:0 12px;border:none;border-radius:7px;font-size:13px;font-weight:500;background:{{ p.bg }};color:{{ p.fg }};box-shadow:{{ p.sh }};">{{ p.label }}</button>
+        </sc-for>
+      </div>
+      <select value="{{ fProject }}" onChange="{{ onFProject }}" style="height:40px;padding:0 8px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;">{{ fProjectOpts }}</select>
+      <select value="{{ fEpisode }}" onChange="{{ onFEpisode }}" disabled="{{ noFProject }}" style="height:40px;padding:0 8px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;">{{ fEpisodeOpts }}</select>
+      <select value="{{ fEmp }}" onChange="{{ onFEmp }}" style="height:40px;padding:0 8px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;">{{ fEmpOpts }}</select>
+      <sc-if value="{{ hasFilters }}"><button onClick="{{ clearFilters }}" style="height:40px;padding:0 10px;border:none;background:transparent;color:var(--accent);font-size:13px;font-weight:600;">Clear filters</button></sc-if>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+    <sc-for list="{{ summary }}" as="sm" hint-placeholder-count="4">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);"><span style="width:8px;height:8px;border-radius:50%;background:{{ sm.dot }};"></span>{{ sm.label }}</div>
+        <div style="font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums;font-size:34px;font-weight:500;letter-spacing:-0.03em;color:{{ sm.color }};">{{ sm.value }}</div>
+        <div style="font-size:13px;color:var(--muted);">{{ sm.sub }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+    <div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;">
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;padding:16px 20px;">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-size:16px;font-weight:600;">Output</h2>
+            <span style="font-size:13px;color:var(--muted);">{{ periodLabel }}</span>
+          </div>
+          <span style="font-size:13px;color:var(--muted);"><span style="font-family:'Geist Mono',monospace;color:var(--ink);font-weight:600;font-size:15px;">{{ totalOut }}</span> total</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(170px,calc(25% - 1px))),1fr));gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+            <div style="background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums;font-size:24px;font-weight:500;color:{{ t.color }};">{{ t.value }}</span>
+              <span style="font-size:13px;color:var(--muted);">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:14px 20px 18px;display:flex;flex-direction:column;">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 64px;gap:8px;padding:6px 0;font-size:12px;font-weight:600;color:var(--muted);">
+            <span>By project and episode</span><span style="text-align:right;">Images</span><span style="text-align:right;">Clips</span><span style="text-align:right;">Total</span>
+          </div>
+          <sc-if value="{{ bdEmpty }}"><div style="padding:24px 0;text-align:center;font-size:14px;color:var(--muted);">No output logged for this selection.</div></sc-if>
+          <sc-for list="{{ bdRows }}" as="row" hint-placeholder-count="4">
+            <sc-if value="{{ row.isProj }}">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 64px;gap:8px;padding:12px 0 6px;border-top:1px solid var(--line);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;">
+                <span>{{ row.name }}</span><span style="text-align:right;font-family:'Geist Mono',monospace;">{{ row.img }}</span><span style="text-align:right;font-family:'Geist Mono',monospace;">{{ row.clip }}</span><span style="text-align:right;font-family:'Geist Mono',monospace;">{{ row.total }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ row.isEp }}">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 64px;gap:8px;align-items:center;padding:5px 0;font-size:14px;color:var(--ink-2);">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;padding-left:12px;">
+                  <span style="width:48px;flex-shrink:0;">{{ row.name }}</span>
+                  <div style="flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;"><div style="height:100%;border-radius:3px;background:var(--accent);width:{{ row.bar }};"></div></div>
+                </div>
+                <span style="text-align:right;font-family:'Geist Mono',monospace;">{{ row.img }}</span><span style="text-align:right;font-family:'Geist Mono',monospace;">{{ row.clip }}</span><span style="text-align:right;font-family:'Geist Mono',monospace;color:var(--ink);">{{ row.total }}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:16px 20px;">
+          <h2 style="margin:0;font-size:16px;font-weight:600;">Team feed</h2>
+          <span style="font-size:13px;color:var(--muted);">{{ feedMeta }}</span>
+        </div>
+        <sc-if value="{{ feedEmpty }}"><div style="padding:28px 20px 32px;text-align:center;font-size:14px;color:var(--muted);border-top:1px solid var(--line);">{{ feedEmptyText }}</div></sc-if>
+        <sc-for list="{{ feed }}" as="f" hint-placeholder-count="5">
+          <div style="border-top:1px solid var(--line);">
+            <button onClick="{{ f.onToggle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 20px;border:none;background:transparent;color:var(--ink);text-align:left;min-height:56px;" style-hover="background:var(--surface-2);">
+              <span style="width:32px;height:32px;flex-shrink:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:600;">{{ f.initial }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:15px;font-weight:600;">{{ f.name }}</span>
+                <span style="font-size:13px;color:var(--muted);">{{ f.meta }}</span>
+              </div>
+              <span style="font-size:13px;color:var(--muted);white-space:nowrap;">{{ f.chev }}</span>
+            </button>
+            <sc-if value="{{ f.open }}">
+              <div style="padding:0 20px 16px 64px;display:flex;flex-direction:column;gap:10px;">
+                <sc-for list="{{ f.entries }}" as="en" hint-placeholder-count="1">
+                  <div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--bg);">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;">
+                      <span style="font-size:14px;font-weight:600;">{{ en.title }}</span>
+                      <div style="display:flex;gap:6px;">
+                        <span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);">{{ en.kind }}</span>
+                        <span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ en.stBg }};color:{{ en.stFg }};">{{ en.status }}</span>
+                      </div>
+                    </div>
+                    <sc-for list="{{ en.lines }}" as="l" hint-placeholder-count="1">
+                      <div style="display:flex;flex-direction:column;gap:1px;">
+                        <span style="font-size:13px;font-weight:600;">{{ l.summary }}</span>
+                        <span style="font-size:13px;color:var(--muted);">{{ l.text }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+
+    <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px;">
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 14px 20px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h2 style="margin:0;font-size:16px;font-weight:600;">Missed EOD</h2>
+            <span style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--danger-soft);color:var(--danger);">{{ missedCount }}</span>
+          </div>
+          <sc-if value="{{ canRemindAll }}"><button onClick="{{ remindAll }}" style="height:34px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--accent);font-size:13px;font-weight:600;" style-hover="background:var(--accent-soft);">Remind all</button></sc-if>
+        </div>
+        <sc-if value="{{ missedNone }}"><div style="padding:20px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-align:center;">{{ missedNoneText }}</div></sc-if>
+        <sc-for list="{{ missed }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px 10px 20px;border-top:1px solid var(--line);min-height:56px;">
+            <span style="width:30px;height:30px;flex-shrink:0;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:12px;font-weight:600;">{{ m.initial }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+              <span style="font-size:14px;font-weight:600;">{{ m.name }}</span>
+              <span style="font-size:12px;color:var(--muted);">{{ m.sub }}</span>
+            </div>
+            <sc-if value="{{ m.canRemind }}"><button onClick="{{ m.onRemind }}" style="height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;white-space:nowrap;" style-hover="border-color:var(--accent);color:var(--accent);">Send reminder</button></sc-if>
+            <sc-if value="{{ m.sent }}"><span style="font-size:12px;color:var(--ok);font-weight:600;white-space:nowrap;">{{ m.sentText }}</span></sc-if>
+            <sc-if value="{{ m.past }}"><span style="font-size:12px;color:var(--danger);font-weight:600;">Missed</span></sc-if>
+          </div>
+        </sc-for>
+      </section>
+
+      <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;">
+        <div style="padding:16px 20px 4px;"><h2 style="margin:0;font-size:16px;font-weight:600;">Notes</h2></div>
+        <div style="padding:10px 20px 6px;font-size:12px;font-weight:600;color:var(--muted);">Tomorrow's plan and availability</div>
+        <sc-if value="{{ plansEmpty }}"><div style="padding:6px 20px 14px;font-size:14px;color:var(--muted);">Nothing shared yet.</div></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:0 12px 8px;">
+          <sc-for list="{{ plans }}" as="pl" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:4px;padding:10px 10px;border-radius:10px;background:{{ pl.rowBg }};">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:14px;font-weight:600;">{{ pl.name }}</span>
+                <sc-if value="{{ pl.flagged }}"><span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface);color:{{ pl.fg }};">{{ pl.flag }}</span></sc-if>
+              </div>
+              <span style="font-size:14px;color:var(--ink-2);text-wrap:pretty;">{{ pl.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:10px 20px 6px;font-size:12px;font-weight:600;color:var(--muted);border-top:1px solid var(--line);">Suggestions, remarks and feedback</div>
+        <sc-if value="{{ remarksEmpty }}"><div style="padding:6px 20px 16px;font-size:14px;color:var(--muted);">No remarks for this day.</div></sc-if>
+        <div style="display:flex;flex-direction:column;padding:0 12px 12px;">
+          <sc-for list="{{ remarkList }}" as="rm" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:3px;padding:10px;">
+              <span style="font-size:14px;font-weight:600;">{{ rm.name }}</span>
+              <span style="font-size:14px;color:var(--ink-2);text-wrap:pretty;">{{ rm.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+</sc-if>
+
+<sc-if value="{{ isAttendance }}">
+<main data-screen-label="Attendance" style="max-width:1280px;margin:0 auto;padding:28px 16px 80px;display:flex;flex-direction:column;gap:16px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
+      <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.025em;">Attendance</h1>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <button onClick="{{ prevMonth }}" aria-label="Previous month" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:16px;" style-hover="background:var(--surface-2);">‹</button>
+        <span style="min-width:132px;text-align:center;font-size:15px;font-weight:600;">{{ monthLabel }}</span>
+        <button onClick="{{ nextMonth }}" aria-label="Next month" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:16px;" style-hover="background:var(--surface-2);">›</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onClick="{{ openHol }}" style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;" style-hover="background:var(--surface-2);">Mark holiday for everyone</button>
+      <button onClick="{{ exportCsv }}" style="height:40px;padding:0 16px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:600;" style-hover="filter:brightness(1.07);">Export</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--ink-2);">
+    <sc-for list="{{ legend }}" as="lg" hint-placeholder-count="6">
+      <span style="display:flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;font-family:'Geist Mono',monospace;background:{{ lg.bg }};color:{{ lg.fg }};">{{ lg.s }}</span>{{ lg.label }}</span>
+    </sc-for>
+    <span style="display:flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:5px;background:repeating-linear-gradient(135deg,var(--weekend) 0 4px,var(--line) 4px 5px);"></span>Weekend</span>
+  </div>
+
+  <sc-if value="{{ holDlg }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);">
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Mark a holiday for all {{ empCount }} employees</span>
+        <select value="{{ holDay }}" onChange="{{ onHolDay }}" style="height:42px;padding:0 10px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;min-width:220px;">{{ holOpts }}</select>
+      </label>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button onClick="{{ closeHol }}" style="height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;" style-hover="background:var(--surface-2);">Cancel</button>
+        <button onClick="{{ applyHol }}" style="height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;">Mark holiday</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasSel }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;padding:14px 18px;border-radius:14px;border:1.5px solid var(--ink);background:var(--surface);">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:160px;">
+        <span style="font-size:15px;font-weight:600;">{{ selTitle }}</span>
+        <span style="font-size:13px;color:var(--muted);">{{ selSub }}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;flex:1;">
+        <sc-for list="{{ selOpts }}" as="so" hint-placeholder-count="6">
+          <button onClick="{{ so.onClick }}" style="height:38px;padding:0 12px;border-radius:9px;font-size:13px;font-weight:600;background:{{ so.bg }};color:{{ so.fg }};border:1.5px solid {{ so.bc }};">{{ so.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ closeSel }}" aria-label="Close" style="width:36px;height:36px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:18px;" style-hover="background:var(--surface-2);">×</button>
+    </div>
+  </sc-if>
+
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow-x:auto;box-shadow:var(--shadow);">
+    <div style="width:max-content;min-width:100%;">
+      <div style="display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;">
+        <div style="position:sticky;left:0;z-index:2;width:150px;flex-shrink:0;padding:8px 14px;background:var(--surface);font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:flex-end;border-right:1px solid var(--line);">Employee</div>
+        <sc-for list="{{ days }}" as="d" hint-placeholder-count="31">
+          <div style="width:34px;flex-shrink:0;padding:6px 0;text-align:center;font-size:11px;line-height:1.3;background:{{ d.bg }};color:{{ d.fg }};font-weight:{{ d.fw }};"><div>{{ d.dow }}</div><div style="font-family:'Geist Mono',monospace;font-size:12px;">{{ d.n }}</div></div>
+        </sc-for>
+        <sc-for list="{{ totCols }}" as="tc" hint-placeholder-count="5">
+          <div style="width:40px;flex-shrink:0;padding:6px 0;text-align:center;font-size:11px;font-weight:600;color:{{ tc.fg }};display:flex;align-items:flex-end;justify-content:center;border-left:1px solid var(--line);">{{ tc.s }}</div>
+        </sc-for>
+      </div>
+      <sc-for list="{{ attRows }}" as="r" hint-placeholder-count="21">
+        <div style="display:flex;border-bottom:1px solid var(--line);">
+          <div style="position:sticky;left:0;z-index:1;width:150px;flex-shrink:0;padding:0 14px;background:var(--surface);font-size:14px;font-weight:500;display:flex;align-items:center;border-right:1px solid var(--line);height:40px;">{{ r.name }}</div>
+          <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="31">
+            <div style="width:34px;height:40px;flex-shrink:0;display:grid;place-items:center;background:{{ c.colBg }};">
+              <sc-if value="{{ c.isBtn }}"><button onClick="{{ c.onClick }}" title="{{ c.title }}" style="width:28px;height:28px;padding:0;border-radius:6px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:700;border:1px {{ c.bs }} {{ c.bc }};background:{{ c.bg }};color:{{ c.fg }};outline:2px solid {{ c.ring }};outline-offset:1px;">{{ c.s }}</button></sc-if>
+            </div>
+          </sc-for>
+          <sc-for list="{{ r.tots }}" as="t" hint-placeholder-count="5">
+            <div style="width:40px;flex-shrink:0;display:grid;place-items:center;font-family:'Geist Mono',monospace;font-size:13px;color:{{ t.fg }};border-left:1px solid var(--line);">{{ t.v }}</div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <span style="font-size:13px;color:var(--muted);">Click any cell to see the check-in time and change the status. Totals: P present, W work from home, H half day, L leave, A absent.</span>
+</main>
+</sc-if>
+
+<sc-if value="{{ isProjects }}">
+<main data-screen-label="Projects" style="max-width:960px;margin:0 auto;padding:28px 16px 80px;display:flex;flex-direction:column;gap:16px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.025em;">Projects</h1>
+      <span style="font-size:14px;color:var(--muted);">{{ projSub }}</span>
+    </div>
+    <button onClick="{{ startCreate }}" style="height:42px;padding:0 18px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:600;" style-hover="filter:brightness(1.07);">New project</button>
+  </div>
+  <sc-if value="{{ creating }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:18px;border-radius:14px;border:1.5px solid var(--accent);background:var(--surface);">
+      <label style="display:flex;flex-direction:column;gap:6px;flex:1 1 260px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Project name</span>
+        <input value="{{ newProj }}" onChange="{{ onNewProj }}" onKeyDown="{{ onNewProjKey }}" autoFocus="{{ true }}" placeholder="e.g. Ramayan – Part 2" style="height:44px;padding:0 12px;border-radius:9px;border:1px solid {{ projBorder }};background:var(--surface);color:var(--ink);font-size:15px;outline:none;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);">
+      </label>
+      <div style="display:flex;gap:8px;">
+        <button onClick="{{ cancelCreate }}" style="height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;" style-hover="background:var(--surface-2);">Cancel</button>
+        <button onClick="{{ createProj }}" style="height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;">Create with EP 01</button>
+      </div>
+      <sc-if value="{{ hasProjErr }}"><div style="flex-basis:100%;font-size:13px;color:var(--danger);font-weight:500;">{{ projErr }}</div></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ noProjects }}"><div style="padding:40px 20px;border-radius:14px;border:1.5px dashed var(--line-2);text-align:center;color:var(--muted);font-size:14px;">No active projects. Create one to start logging work against it.</div></sc-if>
+  <sc-for list="{{ projList }}" as="p" hint-placeholder-count="3">
+    <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:18px;font-weight:600;letter-spacing:-0.01em;">{{ p.name }}</span>
+          <span style="font-size:13px;color:var(--muted);">{{ p.meta }}</span>
+        </div>
+        <button onClick="{{ p.onArchive }}" style="height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--line-2);background:transparent;color:var(--ink-2);font-size:13px;" style-hover="background:var(--surface-2);">Archive</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ p.eps }}" as="ep" hint-placeholder-count="7">
+          <sc-if value="{{ ep.view }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ ep.onEdit }}" title="Click to rename" style="height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-family:'Geist Mono',monospace;font-size:13px;font-weight:500;" style-hover="border-color:var(--accent);">{{ ep.name }}</button>
+          </sc-if>
+          <sc-if value="{{ ep.editing }}">
+            <input value="{{ ep.val }}" onChange="{{ ep.onVal }}" onKeyDown="{{ ep.onKey }}" onBlur="{{ ep.onSave }}" autoFocus="{{ true }}" style="height:40px;width:150px;padding:0 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--surface);color:var(--ink);font-family:'Geist Mono',monospace;font-size:13px;outline:none;">
+          </sc-if>
+        </sc-for>
+        <button onClick="{{ p.onAddEp }}" style="height:40px;padding:0 14px;border-radius:10px;border:1.5px dashed var(--line-2);background:transparent;color:var(--ink-2);font-size:13px;font-weight:500;" style-hover="border-color:var(--accent);color:var(--accent);">+ Add {{ p.nextEp }}</button>
+      </div>
+    </section>
+  </sc-for>
+  <sc-if value="{{ hasArchived }}">
+    <button onClick="{{ toggleArchived }}" style="align-self:flex-start;height:36px;padding:0 4px;border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:500;" style-hover="color:var(--ink);">{{ archivedLabel }}</button>
+    <sc-if value="{{ showArchived }}">
+      <div style="border:1px solid var(--line);border-radius:14px;overflow:hidden;">
+        <sc-for list="{{ archived }}" as="a" hint-placeholder-count="1">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line);background:var(--surface-2);">
+            <span style="font-size:14px;color:var(--ink-2);">{{ a.name }} <span style="color:var(--muted);">· {{ a.meta }}</span></span>
+            <button onClick="{{ a.onRestore }}" style="height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13px;">Restore</button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{ isEmployees }}">
+<main data-screen-label="Employees" style="max-width:960px;margin:0 auto;padding:28px 16px 80px;display:flex;flex-direction:column;gap:16px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.025em;">Employees</h1>
+      <span style="font-size:14px;color:var(--muted);">{{ empSub }}</span>
+    </div>
+    <button onClick="{{ startAdd }}" style="height:42px;padding:0 18px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:600;" style-hover="filter:brightness(1.07);">Add employee</button>
+  </div>
+  <sc-if value="{{ adding }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:18px;border-radius:14px;border:1.5px solid var(--accent);background:var(--surface);">
+      <label style="display:flex;flex-direction:column;gap:6px;flex:1 1 180px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Name</span>
+        <input value="{{ newName }}" onChange="{{ onNewName }}" autoFocus="{{ true }}" placeholder="e.g. Meera" style="height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;outline:none;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:6px;flex:1 1 220px;">
+        <span style="font-size:13px;font-weight:500;color:var(--ink-2);">Email</span>
+        <input value="{{ newEmail }}" onChange="{{ onNewEmail }}" onKeyDown="{{ onAddKey }}" placeholder="meera@studio.ai" style="height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:15px;outline:none;width:100%;" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);">
+      </label>
+      <div style="display:flex;gap:8px;">
+        <button onClick="{{ cancelAdd }}" style="height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:14px;" style-hover="background:var(--surface-2);">Cancel</button>
+        <button onClick="{{ addEmp }}" style="height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;">Add</button>
+      </div>
+      <sc-if value="{{ hasEmpErr }}"><div style="flex-basis:100%;font-size:13px;color:var(--danger);font-weight:500;">{{ empErr }}</div></sc-if>
+    </div>
+  </sc-if>
+  <section style="background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);">
+    <sc-for list="{{ empRows }}" as="e" hint-placeholder-count="21">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px 10px 18px;border-bottom:1px solid var(--line);min-height:60px;">
+        <div style="display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0;opacity:{{ e.op }};">
+          <span style="width:34px;height:34px;flex-shrink:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:600;">{{ e.initial }}</span>
+          <div style="display:flex;flex-direction:column;min-width:0;">
+            <span style="font-size:15px;font-weight:600;">{{ e.name }}</span>
+            <span style="font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;">{{ e.email }}</span>
+          </div>
+        </div>
+        <sc-if value="{{ e.confirming }}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:13px;color:var(--ink-2);">Remove {{ e.name }}? Past logs are kept.</span>
+            <button onClick="{{ e.onCancelRemove }}" style="height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:13px;">Keep</button>
+            <button onClick="{{ e.onRemove }}" style="height:36px;padding:0 12px;border-radius:8px;border:none;background:var(--danger);color:var(--bg);font-size:13px;font-weight:600;">Remove</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ e.normal }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button onClick="{{ e.onToggle }}" role="switch" aria-checked="{{ e.active }}" style="display:flex;align-items:center;gap:10px;height:44px;padding:0 6px;border:none;background:transparent;color:var(--ink-2);font-size:13px;font-weight:500;">
+              <span style="width:44px;height:26px;border-radius:13px;padding:3px;display:flex;justify-content:{{ e.knob }};background:{{ e.track }};transition:background .15s;"><span style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);"></span></span>
+              <span style="width:56px;text-align:left;">{{ e.stateLabel }}</span>
+            </button>
+            <button onClick="{{ e.onAskRemove }}" style="height:36px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;" style-hover="color:var(--danger);background:var(--danger-soft);">Remove</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </section>
+</main>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ toastOn }}">
+  <div role="status" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;padding:12px 18px;border-radius:12px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:500;box-shadow:0 8px 24px oklch(0.2 0.01 260 / 0.25);max-width:calc(100vw - 32px);">{{ toast }}</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;simulatedTime&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Now&quot;,&quot;6:05 PM — near deadline&quot;,&quot;6:45 PM — overdue&quot;],&quot;default&quot;:&quot;6:05 PM — near deadline&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Employee EOD demo&quot;},&quot;eodStart&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Partly filled&quot;,&quot;Blank&quot;],&quot;default&quot;:&quot;Partly filled&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Employee EOD demo&quot;}}">
+const NAMES=['Vipul','Aniket','Gauri','Isha','Kishan','Samiksha','Chirag','Ninad','Riya','Ravi','Leena','Swapnil','Ajay','Kritik','Tirth','Aditya','Jayesh','Tanvi','Jinal','Vedashree','Darsh'];
+const pad=n=>String(n).padStart(2,'0');
+const EPS=Array.from({length:7},(_,i)=>'EP '+pad(i+1));
+const SEED_PROJECTS=['18 days','DVA','Yash – Sadma'];
+const TYPES={image:[{k:'charsheet',label:'Character sheet',pl:'Character sheets'},{k:'location',label:'Location image',pl:'Location images'},{k:'storyboard',label:'Storyboard',pl:'Storyboards'},{k:'keyframe',label:'Keyframe',pl:'Keyframes'}],clip:[{k:'clip',label:'Clip from keyframes',pl:'Clips'},{k:'lipsync',label:'Lip-sync',pl:'Lip-syncs'},{k:'extend',label:'Extend clip',pl:'Extended clips'},{k:'upscale',label:'Upscale',pl:'Upscales'}]};
+const ALL=[...TYPES.image,...TYPES.clip];const BYK={};ALL.forEach(t=>BYK[t.k]=t);
+const KINDS=['Fresh','Revision','Test','Trailer','Training'];
+const STATUSES=['In progress','Sent for approval','On hold','Done'];
+const ATT={present:{label:'Present',s:'P',fg:'var(--ok)',bg:'var(--ok-soft)'},absent:{label:'Absent',s:'A',fg:'var(--danger)',bg:'var(--danger-soft)'},half:{label:'Half day',s:'H',fg:'var(--warn)',bg:'var(--warn-soft)'},wfh:{label:'Work from home',s:'W',fg:'var(--info)',bg:'var(--info-soft)'},leave:{label:'Leave',s:'L',fg:'var(--violet)',bg:'var(--violet-soft)'},holiday:{label:'Holiday',s:'Ho',fg:'var(--hol)',bg:'var(--hol-soft)'}};
+const ATT_KEYS=['present','absent','half','wfh','leave','holiday'];
+const TONE={'In progress':['var(--info)','var(--info-soft)'],'Sent for approval':['var(--violet)','var(--violet-soft)'],'On hold':['var(--warn)','var(--warn-soft)'],'Done':['var(--ok)','var(--ok-soft)']};
+const TX={image:['Kashmir scene revision v3','EP 01 SC 07 Leela–Meera cab scene keyframes','Meera character sheet, festive look v2','Palace corridor location at dusk','Storyboard pass for the market chase','Krishna close-ups, 3 lighting variations','Kurukshetra wide establishing frames'],clip:['lip-sync and changes SC 35, 41, 43','Cab scene clips from approved keyframes','Extended battlefield wide to 8 s','Upscaled final clips for review','Arrow volley clips, retimed','Leela dialogue lip-sync, 2 takes']};
+const REMARKS=['Render queue was slow after 3 PM — waited about 40 min for upscales.','A reference pack for EP 03 would help, the lighting keeps drifting between artists.','Lip-sync model struggles with side profiles. Flagging SC 41 for review.','Can we keep a shared prompt library for Meera\'s look? Saves a lot of rerolls.','Need final approval on the Kashmir palette before I continue the revision.'];
+const PLANS=[{t:"Continue SC 08–10 keyframes. Leaving at 4 PM for a doctor's appointment.",f:'early'},{t:'On leave tomorrow for a family function. Back Monday.',f:'leave'},{t:'Coming in late tomorrow, around 12 PM.',f:'late'},{t:'Finish lip-sync for SC 41, 43 and send for approval.',f:null},{t:'Start EP 04 storyboard with Riya.',f:null},{t:'Upscale approved clips for the EP 02 trailer.',f:null},{t:'Working from home tomorrow, available on chat.',f:'wfh'}];
+const FLAG={early:{label:'Leaving early',fg:'var(--warn)',bg:'var(--warn-soft)'},leave:{label:'On leave',fg:'var(--violet)',bg:'var(--violet-soft)'},late:{label:'Coming late',fg:'var(--warn)',bg:'var(--warn-soft)'},wfh:{label:'WFH',fg:'var(--info)',bg:'var(--info-soft)'}};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONF=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const keyOf=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);};
+const fmtTime=d=>{let h=d.getHours();const m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+pad(m)+' '+ap;};
+const minToTime=x=>fmtTime(new Date(2000,0,1,Math.floor(x/60),x%60));
+const fmtDay=d=>d.getDate()+' '+MON[d.getMonth()];
+const isWeekend=d=>d.getDay()===0||d.getDay()===6;
+const TODAY=new Date();const TODAY_KEY=keyOf(TODAY);
+const LSK='dl-session';
+const loadJSON=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(_){return null;}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const newCard=()=>({id:uid(),project:'',episode:'',scene:'',kind:'',type:'image',sel:{},text:'',lines:[],status:'',err:'',fe:{}});
+const demoCard=()=>({...newCard(),project:'18 days',episode:'EP 01',scene:'SC 06, SC 07',kind:'Revision',type:'clip',status:'In progress',lines:[{id:uid(),type:'image',items:[{k:'charsheet',count:3},{k:'keyframe',count:12}],text:'EP 01 SC 07 Leela–Meera cab scene'}]});
+const itemsText=items=>items.map(it=>it.count+' × '+BYK[it.k].label.toLowerCase()).join(' + ');
+const lineSummary=l=>(l.type==='image'?'Image':'Clip')+' · '+itemsText(l.items);
+const outCount=entries=>entries.reduce((a,en)=>a+en.lines.reduce((b,l)=>b+l.items.reduce((c,it)=>c+it.count,0),0),0);
+const flagOf=t=>/\bleave\b|day off/i.test(t)?'leave':/early|leaving at/i.test(t)?'early':/\blate\b/i.test(t)?'late':/wfh|work(ing)? from home/i.test(t)?'wfh':null;
+const ini=n=>(n||'?').trim().charAt(0).toUpperCase();
+const entryTitle=en=>[en.project,en.episode,en.scene].filter(Boolean).join(' · ');
+
+function gen(name,k){
+  const r=rng(hash(name+'|'+k));const pick=a=>a[Math.floor(r()*a.length)];
+  const x=r();const att=x<0.04?'absent':x<0.09?'leave':x<0.14?'half':x<0.22?'wfh':'present';
+  const checkIn=minToTime(9*60+2+Math.floor(r()*80));
+  const submitted=r()<(k===TODAY_KEY?0.7:0.94);
+  const submittedAt=minToTime(17*60+35+Math.floor(r()*80));
+  const entries=[];const n=1+(r()<0.35?1:0);
+  for(let i=0;i<n;i++){
+    const p=pick(SEED_PROJECTS);const ep=EPS[Math.floor(r()*5)];const sc=1+Math.floor(r()*44);
+    const scene='SC '+pad(sc)+(r()<0.45?', SC '+pad(sc+1):'');
+    const kx=r();const kind=kx<0.5?'Fresh':kx<0.8?'Revision':kx<0.9?'Test':kx<0.96?'Trailer':'Training';
+    const status=pick(STATUSES);const lines=[];const nl=1+(r()<0.3?1:0);
+    for(let j=0;j<nl;j++){
+      const type=j===0?(r()<0.55?'image':'clip'):(lines[0].type==='image'?'clip':'image');
+      const pool=TYPES[type].slice();const ni=1+(r()<0.4?1:0);const items=[];
+      for(let q=0;q<ni;q++){const t=pool.splice(Math.floor(r()*pool.length),1)[0];const max=(t.k==='charsheet'||t.k==='location')?4:t.k==='keyframe'?16:10;items.push({k:t.k,count:1+Math.floor(r()*max)});}
+      items.sort((a,b)=>ALL.indexOf(BYK[a.k])-ALL.indexOf(BYK[b.k]));
+      lines.push({type,items,text:pick(TX[type])});
+    }
+    entries.push({project:p,episode:ep,scene,kind,status,lines});
+  }
+  const remark=r()<0.2?pick(REMARKS):'';
+  const plan=r()<0.4?pick(PLANS):null;
+  return {att,checkIn,submitted,submittedAt,entries,remark,plan};
+}
+
+class Component extends DCLogic {
+  _cache={};
+  state=(()=>{const sess=loadJSON(LSK)||{};let theme='light';try{theme=localStorage.getItem('dl-theme')||'light';}catch(_){}
+    return {theme,role:sess.role||null,empName:sess.empName||'Gauri',checkIn:sess.checkIn||'',page:sess.page||'dashboard',
+      loginVal:'',loginErr:'',
+      projects:SEED_PROJECTS.map((n,i)=>({id:'p'+i,name:n,episodes:EPS.slice(),archived:false})),
+      employees:NAMES.map(n=>({name:n,email:n.toLowerCase()+'@studio.ai',active:true})),
+      cards:[(this.props.eodStart??'Partly filled')==='Blank'?newCard():demoCard()],remarks:'',plan:'',stage:'edit',submittedAt:'',submitErr:'',
+      dDate:TODAY_KEY,dPeriod:'day',fProject:'',fEpisode:'',fEmp:'',expanded:{},reminded:{},
+      aY:TODAY.getFullYear(),aM:TODAY.getMonth(),attOv:{},holidays:{'2026-10-02':true,'2026-10-20':true},sel:null,holDlg:false,holDay:'',
+      creating:false,newProj:'',projErr:'',renaming:null,showArchived:false,
+      adding:false,newName:'',newEmail:'',empErr:'',confirmRemove:null,toast:''};})();
+  componentDidUpdate(pp){if(pp.eodStart!==this.props.eodStart&&this.state.stage!=='done'){this.setState({cards:[this.props.eodStart==='Blank'?newCard():demoCard()],submitErr:''});}}
+  componentWillUnmount(){clearTimeout(this._t);}
+  flash(msg){clearTimeout(this._t);this.setState({toast:msg});this._t=setTimeout(()=>this.setState({toast:''}),2800);}
+  persist(p){try{p?localStorage.setItem(LSK,JSON.stringify(p)):localStorage.removeItem(LSK);}catch(_){}}
+  g(n,k){const id=n+'|'+k;if(!(id in this._cache))this._cache[id]=gen(n,k);return this._cache[id];}
+  attOf(n,k){const s=this.state;if(isWeekend(parseKey(k)))return 'weekend';const ov=s.attOv[n+'|'+k];if(ov)return ov;if(s.holidays[k])return 'holiday';if(k>TODAY_KEY)return 'future';return this.g(n,k).att;}
+  rec(n,k){const s=this.state;const a=this.attOf(n,k);if(a==='weekend'||a==='future')return null;const g=this.g(n,k);const attending=a==='present'||a==='half'||a==='wfh';
+    if(n===s.empName&&k===TODAY_KEY){const d=s.stage==='done';return {att:a,attending:attending||d,checkIn:g.checkIn,submitted:d,submittedAt:s.submittedAt,entries:d?s.cards.map(c=>({project:c.project,episode:c.episode,scene:c.scene,kind:c.kind,status:c.status,lines:c.lines})):[],remark:d?s.remarks.trim():'',plan:d&&s.plan.trim()?{t:s.plan.trim(),f:flagOf(s.plan)}:null};}
+    const sub=attending&&g.submitted;return {att:a,attending,checkIn:g.checkIn,submitted:sub,submittedAt:g.submittedAt,entries:sub?g.entries:[],remark:sub?g.remark:'',plan:sub?g.plan:null};}
+
+  renderVals(){
+    const s=this.state,P=this.props,e=React.createElement,set=o=>this.setState(o);
+    const opts=(list,ph)=>{const out=[];if(ph!=null)out.push(e('option',{key:'_',value:''},ph));list.forEach(o=>{const v=typeof o==='string'?o:o.value,l=typeof o==='string'?o:o.label;out.push(e('option',{key:v,value:v},l));});return out;};
+    const seg=on=>({bg:on?'var(--surface)':'transparent',fg:on?'var(--ink)':'var(--muted)',sh:on?'0 1px 2px oklch(0.2 0.01 260 / 0.14)':'none'});
+    const signIn=()=>{const v=s.loginVal.trim();if(!v)return set({loginErr:'Enter your name or email to continue.'});
+      const checkIn=fmtTime(new Date());
+      if(/^manager(@|$)/i.test(v)){const ss={role:'manager',page:'dashboard',checkIn};this.persist({...ss,empName:s.empName});return set({...ss,loginErr:''});}
+      const base=v.split('@')[0].replace(/[._-]+/g,' ').trim().toLowerCase();
+      const match=s.employees.find(x=>x.email.toLowerCase()===v.toLowerCase()||x.name.toLowerCase()===base);
+      if(!match)return set({loginErr:'We couldn\'t find that name or email in the team list.'});
+      if(!match.active)return set({loginErr:match.name+'\'s account is inactive. Ask your manager to reactivate it.'});
+      const ss={role:'employee',empName:match.name,checkIn};this.persist(ss);set({...ss,loginErr:''});};
+    const isManager=s.role==='manager';
+    const out={theme:s.theme,isLogin:!s.role,isApp:!!s.role,isEmployee:s.role==='employee',
+      toggleTheme:()=>{const t=s.theme==='dark'?'light':'dark';try{localStorage.setItem('dl-theme',t);}catch(_){}set({theme:t});},
+      themeLabel:s.theme==='dark'?'Switch to light mode':'Switch to dark mode',themeShort:s.theme==='dark'?'Light':'Dark',
+      userInitial:isManager?'M':ini(s.empName),
+      signOut:()=>{this.persist(null);set({role:null,loginErr:'',loginVal:''});},
+      toastOn:!!s.toast,toast:s.toast,
+      loginRoles:[['employee','Employee'],['manager','Manager']].map(([k,l])=>({label:l,...seg(s.loginRole===k),onClick:()=>set({loginRole:k,loginErr:'',loginVal:k==='manager'?'manager@studio.ai':'gauri@studio.ai'})})),
+      loginVal:s.loginVal,onLoginVal:ev=>set({loginVal:ev.target.value,loginErr:''}),onLoginKey:ev=>{if(ev.key==='Enter')signIn();},signIn,
+      loginErr:s.loginErr,hasLoginErr:!!s.loginErr,loginBorder:s.loginErr?'var(--danger)':'var(--line-2)',
+      loginNote:'Your view is set by your email. Demo: gauri@studio.ai (employee) or manager@studio.ai.',
+      nav:isManager?[['dashboard','Dashboard'],['attendance','Attendance'],['projects','Projects'],['employees','Employees']].map(([k,l])=>({label:l,bg:s.page===k?'var(--surface-2)':'transparent',fg:s.page===k?'var(--ink)':'var(--muted)',onClick:()=>{set({page:k});this.persist({role:'manager',page:k,checkIn:s.checkIn,empName:s.empName});}})):[],
+      isDashboard:isManager&&s.page==='dashboard',isAttendance:isManager&&s.page==='attendance',isProjects:isManager&&s.page==='projects',isEmployees:isManager&&s.page==='employees'};
+    if(out.isEmployee)Object.assign(out,this.eodVals(opts,seg));
+    if(out.isDashboard)Object.assign(out,this.dashVals(opts,seg));
+    if(out.isAttendance)Object.assign(out,this.attVals(opts));
+    if(out.isProjects)Object.assign(out,this.projVals());
+    if(out.isEmployees)Object.assign(out,this.empVals());
+    return out;
+  }
+
+  eodVals(opts,seg){
+    const s=this.state,P=this.props,set=o=>this.setState(o);
+    const clock=P.simulatedTime??'6:05 PM — near deadline';const near=clock.startsWith('6:05'),over=clock.startsWith('6:45');
+    const done=s.stage==='done';
+    const actProj=s.projects.filter(p=>!p.archived);
+    const upd=(id,f)=>this.setState(st=>({cards:st.cards.map(c=>c.id===id?{...c,...(typeof f==='function'?f(c):f)}:c),submitErr:''}));
+    const B=x=>x?'var(--danger)':'var(--line-2)';
+    const cards=s.cards.map((c,i)=>{
+      const proj=s.projects.find(p=>p.name===c.project);
+      const chips=TYPES[c.type].map(t=>{const cnt=c.sel[t.k]||0;return {label:t.label,on:cnt>0,off:!cnt,count:cnt,
+        onToggle:()=>upd(c.id,cc=>{const sel={...cc.sel};if(sel[t.k])delete sel[t.k];else sel[t.k]=1;return {sel,err:''};}),
+        onInc:()=>upd(c.id,cc=>({sel:{...cc.sel,[t.k]:Math.min(999,(cc.sel[t.k]||0)+1)}})),
+        onDec:()=>upd(c.id,cc=>{const sel={...cc.sel};const v=(sel[t.k]||0)-1;if(v<=0)delete sel[t.k];else sel[t.k]=v;return {sel};})};});
+      const linesMsg=c.fe.unsaved?'You have unsaved picks or text here. Save them as a line or cancel.':c.fe.lines?'Add at least one line: pick outputs, describe them, then Save.':'';
+      return {n:i+1,canRemove:s.cards.length>1,onRemove:()=>this.setState(st=>({cards:st.cards.filter(x=>x.id!==c.id)})),
+        project:c.project,projectOpts:opts(actProj.map(p=>p.name).concat(proj&&proj.archived?[proj.name]:[]),'Select project'),bProject:B(c.fe.project),
+        onProject:ev=>upd(c.id,cc=>({project:ev.target.value,episode:'',fe:{...cc.fe,project:false}})),
+        episode:c.episode,episodeOpts:opts(proj?proj.episodes:[],c.project?'Select episode':'Pick a project first'),noProject:!c.project,bEpisode:B(c.fe.episode),
+        onEpisode:ev=>upd(c.id,cc=>({episode:ev.target.value,fe:{...cc.fe,episode:false}})),
+        scene:c.scene,onScene:ev=>upd(c.id,{scene:ev.target.value}),
+        kind:c.kind,kindOpts:opts(KINDS,'Select kind'),bKind:B(c.fe.kind),onKind:ev=>upd(c.id,cc=>({kind:ev.target.value,fe:{...cc.fe,kind:false}})),
+        img:seg(c.type==='image'),clip:seg(c.type==='clip'),
+        onImage:()=>upd(c.id,cc=>cc.type==='image'?{}:{type:'image',sel:{},err:''}),onClip:()=>upd(c.id,cc=>cc.type==='clip'?{}:{type:'clip',sel:{},err:''}),
+        chips,text:c.text,onText:ev=>upd(c.id,cc=>({text:ev.target.value,err:'',fe:{...cc.fe,unsaved:false}})),
+        textPh:c.type==='image'?'e.g. Kashmir scene revision v3':'e.g. lip-sync and changes SC 35, 41, 43',
+        err:c.err,hasErr:!!c.err,bWork:(c.err||c.fe.unsaved||c.fe.lines)?'var(--danger)':'var(--line)',
+        onCancel:()=>upd(c.id,cc=>({sel:{},text:'',err:'',fe:{...cc.fe,unsaved:false}})),
+        onSave:()=>upd(c.id,cc=>{const keys=TYPES[cc.type].map(t=>t.k).filter(k=>cc.sel[k]);const txt=cc.text.trim();
+          if(!keys.length&&!txt)return {err:'Pick at least one output and describe what you made.'};
+          if(!keys.length)return {err:'Pick at least one output above.'};
+          if(!txt)return {err:'Describe what you made today.'};
+          return {lines:[...cc.lines,{id:uid(),type:cc.type,items:keys.map(k=>({k,count:cc.sel[k]})),text:txt}],sel:{},text:'',err:'',fe:{...cc.fe,lines:false,unsaved:false}};}),
+        lines:c.lines.map(l=>({tag:l.type==='image'?'Image':'Clip',summary:itemsText(l.items),text:l.text,onRemove:()=>upd(c.id,cc=>({lines:cc.lines.filter(x=>x.id!==l.id)}))})),
+        hasLines:c.lines.length>0,lineCount:c.lines.length,linesMsg,hasLinesMsg:!!linesMsg,
+        status:c.status,statusOpts:opts(STATUSES,'Select status'),bStatus:B(c.fe.status),onStatus:ev=>upd(c.id,cc=>({status:ev.target.value,fe:{...cc.fe,status:false}}))};
+    });
+    const nLines=s.cards.reduce((a,c)=>a+c.lines.length,0);
+    const outputs=outCount(s.cards);
+    return {todayLabel:fmtDay(TODAY),empName:s.empName,checkIn:s.checkIn||'9:42 AM',
+      badge:done?{text:'Submitted at '+s.submittedAt,fg:'var(--ok)',bg:'var(--ok-soft)'}:over?{text:'EOD overdue',fg:'var(--danger)',bg:'var(--danger-soft)'}:near?{text:'EOD due 6:30 PM · 25 min left',fg:'var(--warn)',bg:'var(--warn-soft)'}:{text:'EOD due 6:30 PM',fg:'var(--ink-2)',bg:'var(--surface-2)'},
+      showBanner:!done&&(near||over),
+      banner:over?{title:'Your EOD is overdue',text:'It was due at 6:30 PM. Submit now so your manager sees today\'s work.',fg:'var(--danger)',bg:'var(--danger-soft)'}:{title:'EOD due in 25 minutes',text:'Save any open lines in your scene entries and submit before 6:30 PM.',fg:'var(--warn)',bg:'var(--warn-soft)'},
+      editing:!done,isDone:done,cards,
+      addCard:()=>this.setState(st=>({cards:[...st.cards,newCard()]})),
+      remarks:s.remarks,onRemarks:ev=>set({remarks:ev.target.value}),plan:s.plan,onPlan:ev=>set({plan:ev.target.value}),
+      submitErr:s.submitErr,hasSubmitErr:!!s.submitErr,notConfirming:s.stage==='edit',confirming:s.stage==='confirm',
+      onSubmit:()=>{let bad=0;const cs=s.cards.map(c=>{const unsaved=Object.keys(c.sel).length>0||!!c.text.trim();const fe={project:!c.project,episode:!c.episode,kind:!c.kind,status:!c.status,lines:!c.lines.length&&!unsaved,unsaved};Object.values(fe).forEach(v=>{if(v)bad++;});return {...c,fe};});
+        if(bad)set({cards:cs,submitErr:'Fix '+bad+(bad>1?' items':' item')+' marked in red before submitting.'});else set({cards:cs,stage:'confirm',submitErr:''});},
+      confirmSummary:s.cards.length+(s.cards.length>1?' scenes':' scene')+' · '+nLines+(nLines>1?' lines':' line')+' · '+outputs+' outputs. You can still edit it afterwards.',
+      backToEdit:()=>set({stage:'edit'}),
+      confirmSubmit:()=>{set({stage:'done',submittedAt:fmtTime(new Date())});this.flash('EOD submitted');},
+      editAgain:()=>set({stage:'edit'}),submittedAt:s.submittedAt,
+      doneCards:s.cards.map(c=>({title:entryTitle(c),kind:c.kind,status:c.status,stFg:(TONE[c.status]||[])[0],stBg:(TONE[c.status]||[])[1],lines:c.lines.map(l=>({summary:lineSummary(l),text:l.text}))})),
+      doneNotes:[['Suggestion / remarks / feedback',s.remarks],["Tomorrow's plan and availability",s.plan]].filter(x=>x[1].trim()).map(([label,text])=>({label,text}))};
+  }
+
+  dashVals(opts,seg){
+    const s=this.state,set=o=>this.setState(o);
+    const emps=s.employees.filter(x=>x.active).map(x=>x.name);
+    const k=s.dDate,dd=parseKey(k),isToday=k===TODAY_KEY;
+    const list=s.fEmp?emps.filter(n=>n===s.fEmp):emps;
+    const match=en=>(!s.fProject||en.project===s.fProject)&&(!s.fEpisode||en.episode===s.fEpisode);
+    const noWork=isWeekend(dd)?'It\'s a weekend. No EODs expected.':s.holidays[k]?'Studio holiday. No EODs expected.':'';
+    const recs=list.map(n=>({n,r:this.rec(n,k)}));
+    let present=0,away=0,sub=0;const missed=[];
+    recs.forEach(({n,r})=>{if(!r)return;if(r.attending){present++;if(r.submitted)sub++;else missed.push({n,r});}else if(r.att==='absent'||r.att==='leave')away++;});
+    let start=new Date(dd);if(s.dPeriod==='week')start.setDate(dd.getDate()-((dd.getDay()+6)%7));else if(s.dPeriod==='month')start.setDate(1);
+    const keys=[];for(let x=new Date(start);x<=dd;x.setDate(x.getDate()+1)){const kk=keyOf(x);if(kk>TODAY_KEY)break;keys.push(kk);}
+    const counts={},bd={};
+    keys.forEach(kk=>list.forEach(n=>{const r=this.rec(n,kk);if(!r||!r.submitted)return;r.entries.filter(match).forEach(en=>{if(!en.project||!en.episode)return;const pb=bd[en.project]=bd[en.project]||{};const eb=pb[en.episode]=pb[en.episode]||{img:0,clip:0};en.lines.forEach(l=>l.items.forEach(it=>{counts[it.k]=(counts[it.k]||0)+it.count;eb[l.type==='image'?'img':'clip']+=it.count;}));});}));
+    const rows=[];let max=1;Object.values(bd).forEach(pb=>Object.values(pb).forEach(v=>{max=Math.max(max,v.img+v.clip);}));
+    const order=s.projects.map(p=>p.name).concat(Object.keys(bd).filter(n=>!s.projects.find(p=>p.name===n)));
+    order.filter(n=>bd[n]).forEach(n=>{const pb=bd[n];const eps=Object.keys(pb).sort();const ti=eps.reduce((a,x)=>a+pb[x].img,0),tc=eps.reduce((a,x)=>a+pb[x].clip,0);
+      rows.push({isProj:true,isEp:false,name:n,img:ti,clip:tc,total:ti+tc});
+      eps.forEach(x=>{const v=pb[x];rows.push({isProj:false,isEp:true,name:x,img:v.img,clip:v.clip,total:v.img+v.clip,bar:Math.round((v.img+v.clip)/max*100)+'%'});});});
+    const totalOut=Object.values(counts).reduce((a,b)=>a+b,0);
+    const end=dd;const periodLabel=s.dPeriod==='day'?fmtDay(dd)+(isToday?' · today':''):fmtDay(start)+' – '+fmtDay(end);
+    const feed=recs.filter(x=>x.r&&x.r.submitted).map(({n,r})=>{const ents=r.entries.filter(match);const oc=outCount(ents);const id=n+'|'+k;const open=!!s.expanded[id];
+      return {name:n,initial:ini(n),open,chev:open?'Hide ▴':'Show ▾',meta:'Submitted '+r.submittedAt+' · '+ents.length+(ents.length>1?' scenes':' scene')+' · '+oc+(oc===1?' output':' outputs'),ents,
+        onToggle:()=>this.setState(st=>({expanded:{...st.expanded,[id]:!st.expanded[id]}})),
+        entries:ents.map(en=>({title:entryTitle(en),kind:en.kind,status:en.status,stFg:(TONE[en.status]||[])[0],stBg:(TONE[en.status]||[])[1],lines:en.lines.map(l=>({summary:lineSummary(l),text:l.text}))}))};}).filter(f=>f.ents.length);
+    const now=fmtTime(new Date());
+    const remind=n=>this.setState(st=>({reminded:{...st.reminded,[n]:now}}));
+    const pend=missed.filter(m=>!s.reminded[m.n]);
+    const subRecs=recs.filter(x=>x.r&&x.r.submitted);
+    const plans=subRecs.filter(x=>x.r.plan).map(({n,r})=>{const f=FLAG[r.plan.f];return {name:n,text:r.plan.t,flagged:!!f,flag:f?f.label:'',fg:f?f.fg:'',rowBg:f?f.bg:'transparent',w:f?0:1};}).sort((a,b)=>a.w-b.w);
+    const remarkList=subRecs.filter(x=>x.r.remark).map(({n,r})=>({name:n,text:r.remark}));
+    const actProj=s.projects.filter(p=>!p.archived);const fp=s.projects.find(p=>p.name===s.fProject);
+    return {dashSub:(isToday?'Today, ':'')+DOW[dd.getDay()]+' '+fmtDay(dd)+' '+dd.getFullYear(),
+      dDate:k,todayKey:TODAY_KEY,onDate:ev=>{if(ev.target.value)set({dDate:ev.target.value>TODAY_KEY?TODAY_KEY:ev.target.value});},
+      periods:[['day','Day'],['week','Week'],['month','Month']].map(([v,l])=>({label:l,...seg(s.dPeriod===v),onClick:()=>set({dPeriod:v})})),
+      fProject:s.fProject,fProjectOpts:opts(actProj.map(p=>p.name),'All projects'),onFProject:ev=>set({fProject:ev.target.value,fEpisode:''}),
+      fEpisode:s.fEpisode,fEpisodeOpts:opts(fp?fp.episodes:[],'All episodes'),noFProject:!s.fProject,onFEpisode:ev=>set({fEpisode:ev.target.value}),
+      fEmp:s.fEmp,fEmpOpts:opts(emps,'All employees'),onFEmp:ev=>set({fEmp:ev.target.value}),
+      hasFilters:!!(s.fProject||s.fEmp),clearFilters:()=>set({fProject:'',fEpisode:'',fEmp:''}),
+      summary:[{label:'Present',value:present,sub:noWork||('of '+list.length+(list.length>1?' people':' person')),dot:'var(--ok)',color:'var(--ink)'},
+        {label:'Absent / leave',value:away,sub:noWork?'—':'Includes planned leave',dot:'var(--violet)',color:'var(--ink)'},
+        {label:'EOD submitted',value:sub,sub:present?Math.round(sub/present*100)+'% of people present':'—',dot:'var(--accent)',color:'var(--ink)'},
+        {label:'EOD missed',value:missed.length,sub:isToday?'Due 6:30 PM':'Not submitted that day',dot:'var(--danger)',color:missed.length?'var(--danger)':'var(--ink)'}],
+      periodLabel,totalOut,tiles:ALL.map(t=>({label:t.pl,value:counts[t.k]||0,color:counts[t.k]?'var(--ink)':'var(--muted)'})),
+      bdRows:rows,bdEmpty:!rows.length,
+      feed,feedEmpty:!feed.length,feedMeta:feed.length+' submitted',feedEmptyText:noWork||(s.fProject?'No submitted EODs match these filters.':'No EODs submitted yet for this day.'),
+      missedCount:missed.length,missedNone:!missed.length,missedNoneText:noWork||'Everyone present has submitted.',
+      canRemindAll:isToday&&pend.length>1,remindAll:()=>{this.setState(st=>{const r={...st.reminded};pend.forEach(m=>r[m.n]=now);return {reminded:r};});this.flash('Reminders sent to '+pend.length+' people');},
+      missed:missed.map(({n,r})=>({name:n,initial:ini(n),sub:'Checked in '+r.checkIn+(r.att==='wfh'?' · WFH':r.att==='half'?' · Half day':''),
+        canRemind:isToday&&!s.reminded[n],sent:isToday&&!!s.reminded[n],sentText:'Reminder sent · '+(s.reminded[n]||''),past:!isToday,
+        onRemind:()=>{remind(n);this.flash('Reminder sent to '+n);}})),
+      plans,plansEmpty:!plans.length,remarkList,remarksEmpty:!remarkList.length};
+  }
+
+  attVals(opts){
+    const s=this.state,set=o=>this.setState(o);
+    const emps=s.employees.filter(x=>x.active).map(x=>x.name);
+    const y=s.aY,m=s.aM,dim=new Date(y,m+1,0).getDate();
+    const days=[];for(let d=1;d<=dim;d++){const dt=new Date(y,m,d);const kk=keyOf(dt);const we=isWeekend(dt);const td=kk===TODAY_KEY;
+      days.push({kk,dt,we,n:d,dow:DOW[dt.getDay()].charAt(0),bg:td?'var(--accent-soft)':we?'var(--weekend)':'transparent',fg:td?'var(--accent)':we?'var(--muted)':'var(--ink-2)',fw:td?'700':'500'});}
+    const stripes='repeating-linear-gradient(135deg,var(--weekend) 0 4px,var(--line) 4px 5px)';
+    const TOT=[['present','P'],['wfh','W'],['half','H'],['leave','L'],['absent','A']];
+    const attRows=emps.map(n=>{const tot={present:0,wfh:0,half:0,leave:0,absent:0};
+      const cells=days.map(dy=>{const a=this.attOf(n,dy.kk);if(a in tot)tot[a]++;const isSel=!!s.sel&&s.sel.n===n&&s.sel.k===dy.kk;const A=ATT[a];
+        if(a==='weekend')return {isBtn:false,colBg:stripes};
+        return {isBtn:true,colBg:dy.kk===TODAY_KEY?'var(--accent-soft)':'transparent',s:A?A.s:'',bg:A?A.bg:'transparent',fg:A?A.fg:'var(--muted)',bs:A?'solid':'dashed',bc:A?'transparent':'var(--line-2)',ring:isSel?'var(--ink)':'transparent',
+          title:n+' · '+DOW[dy.dt.getDay()]+' '+fmtDay(dy.dt)+' · '+(A?A.label:'Not marked yet'),onClick:()=>set({sel:{n,k:dy.kk},holDlg:false})};});
+      return {name:n,cells,tots:TOT.map(([kk])=>({v:tot[kk],fg:tot[kk]?ATT[kk].fg:'var(--muted)'}))};});
+    let selTitle='',selSub='',selOpts=[];
+    if(s.sel){const {n,k}=s.sel;const dt=parseKey(k);const a=this.attOf(n,k);const r=this.rec(n,k);
+      selTitle=n+' · '+DOW[dt.getDay()]+', '+fmtDay(dt);
+      selSub=a==='future'?'Not checked in yet':r&&r.attending?'Checked in '+r.checkIn:'No check-in';
+      selOpts=ATT_KEYS.map(key=>{const A=ATT[key];const on=a===key;return {label:A.label,bg:on?A.bg:'var(--surface)',fg:on?A.fg:'var(--ink-2)',bc:on?A.fg:'var(--line-2)',
+        onClick:()=>{this.setState(st=>({attOv:{...st.attOv,[n+'|'+k]:key}}));this.flash(n+' marked '+A.label.toLowerCase()+' for '+fmtDay(dt));}};});}
+    const wd=days.filter(d=>!d.we);
+    return {monthLabel:MONF[m]+' '+y,
+      prevMonth:()=>set(m===0?{aY:y-1,aM:11,sel:null}:{aM:m-1,sel:null}),nextMonth:()=>set(m===11?{aY:y+1,aM:0,sel:null}:{aM:m+1,sel:null}),
+      legend:ATT_KEYS.map(k=>ATT[k]),days,totCols:TOT.map(([k,l])=>({s:l,fg:ATT[k].fg})),attRows,
+      hasSel:!!s.sel,selTitle,selSub,selOpts,closeSel:()=>set({sel:null}),
+      empCount:emps.length,holDlg:s.holDlg,
+      openHol:()=>{const def=wd.find(d=>d.kk>=TODAY_KEY&&!s.holidays[d.kk])||wd[0];set({holDlg:true,sel:null,holDay:def?def.kk:''});},
+      closeHol:()=>set({holDlg:false}),holDay:s.holDay,onHolDay:ev=>set({holDay:ev.target.value}),
+      holOpts:opts(wd.map(d=>({value:d.kk,label:DOW[d.dt.getDay()]+', '+fmtDay(d.dt)+(s.holidays[d.kk]?' · already a holiday':'')}))),
+      applyHol:()=>{const k=s.holDay;if(!k)return;this.setState(st=>{const ov={...st.attOv};Object.keys(ov).forEach(x=>{if(x.endsWith('|'+k))delete ov[x];});return {holidays:{...st.holidays,[k]:true},attOv:ov,holDlg:false};});this.flash(fmtDay(parseKey(k))+' marked as a holiday for everyone');},
+      exportCsv:()=>{const head=['Employee',...days.map(d=>d.n),'Present','WFH','Half day','Leave','Absent'];
+        const lines=[head.join(',')].concat(attRows.map(r=>[r.name,...r.cells.map(c=>c.isBtn?(c.s||''):'WE'),...r.tots.map(t=>t.v)].join(',')));
+        const fn='attendance-'+y+'-'+pad(m+1)+'.csv';
+        try{const url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(_){}
+        this.flash('Exported '+fn);}};
+  }
+
+  projVals(){
+    const s=this.state,set=o=>this.setState(o);
+    const updP=(id,f)=>this.setState(st=>({projects:st.projects.map(p=>p.id===id?{...p,...f(p)}:p)}));
+    const act=s.projects.filter(p=>!p.archived),arc=s.projects.filter(p=>p.archived);
+    const create=()=>{const n=s.newProj.trim();if(!n)return set({projErr:'Give the project a name.'});
+      if(s.projects.some(p=>p.name.toLowerCase()===n.toLowerCase()))return set({projErr:'A project with this name already exists.'});
+      this.setState(st=>({projects:[{id:uid(),name:n,episodes:['EP 01'],archived:false},...st.projects],creating:false,newProj:'',projErr:''}));this.flash('Created '+n);};
+    const saveRename=()=>{const r=this.state.renaming;if(!r)return;const v=r.val.trim();
+      if(v)updP(r.pid,p=>({episodes:p.episodes.map((x,i)=>i===r.i?v:x)}));this.setState({renaming:null});};
+    return {projSub:act.length+' active'+(arc.length?' · '+arc.length+' archived':''),
+      startCreate:()=>set({creating:true,projErr:''}),cancelCreate:()=>set({creating:false,newProj:'',projErr:''}),creating:s.creating,
+      newProj:s.newProj,onNewProj:ev=>set({newProj:ev.target.value,projErr:''}),onNewProjKey:ev=>{if(ev.key==='Enter')create();if(ev.key==='Escape')set({creating:false});},
+      createProj:create,projErr:s.projErr,hasProjErr:!!s.projErr,projBorder:s.projErr?'var(--danger)':'var(--line-2)',
+      noProjects:!act.length,
+      projList:act.map(p=>({name:p.name,meta:p.episodes.length+(p.episodes.length>1?' episodes':' episode'),nextEp:'EP '+pad(p.episodes.length+1),
+        onArchive:()=>{updP(p.id,()=>({archived:true}));this.flash(p.name+' archived');},
+        onAddEp:()=>updP(p.id,pp=>({episodes:[...pp.episodes,'EP '+pad(pp.episodes.length+1)]})),
+        eps:p.episodes.map((x,i)=>{const ed=!!s.renaming&&s.renaming.pid===p.id&&s.renaming.i===i;return {name:x,view:!ed,editing:ed,val:ed?s.renaming.val:x,
+          onEdit:()=>set({renaming:{pid:p.id,i,val:x}}),onVal:ev=>set({renaming:{...this.state.renaming,val:ev.target.value}}),
+          onKey:ev=>{if(ev.key==='Enter')saveRename();if(ev.key==='Escape')set({renaming:null});},onSave:saveRename};})})),
+      hasArchived:arc.length>0,showArchived:s.showArchived,toggleArchived:()=>set({showArchived:!s.showArchived}),
+      archivedLabel:(s.showArchived?'Hide archived':'Show archived')+' ('+arc.length+')',
+      archived:arc.map(p=>({name:p.name,meta:p.episodes.length+' episodes',onRestore:()=>{updP(p.id,()=>({archived:false}));this.flash(p.name+' restored');}}))};
+  }
+
+  empVals(){
+    const s=this.state,set=o=>this.setState(o);
+    const add=()=>{const n=s.newName.trim(),em=s.newEmail.trim().toLowerCase();
+      if(!n||!em)return set({empErr:'Name and email are both required.'});
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return set({empErr:'That email doesn\'t look right.'});
+      if(s.employees.some(x=>x.email===em))return set({empErr:'Someone already uses this email.'});
+      this.setState(st=>({employees:[...st.employees,{name:n,email:em,active:true}],adding:false,newName:'',newEmail:'',empErr:''}));this.flash(n+' added to the team');};
+    const act=s.employees.filter(x=>x.active).length;
+    return {empSub:act+' active of '+s.employees.length,adding:s.adding,startAdd:()=>set({adding:true,empErr:''}),cancelAdd:()=>set({adding:false,newName:'',newEmail:'',empErr:''}),
+      newName:s.newName,onNewName:ev=>set({newName:ev.target.value,empErr:''}),newEmail:s.newEmail,onNewEmail:ev=>set({newEmail:ev.target.value,empErr:''}),
+      onAddKey:ev=>{if(ev.key==='Enter')add();},addEmp:add,empErr:s.empErr,hasEmpErr:!!s.empErr,
+      empRows:s.employees.map(x=>{const c=s.confirmRemove===x.email;return {name:x.name,email:x.email,initial:ini(x.name),active:x.active,op:x.active?'1':'0.5',
+        confirming:c,normal:!c,knob:x.active?'flex-end':'flex-start',track:x.active?'var(--accent)':'var(--line-2)',stateLabel:x.active?'Active':'Inactive',
+        onToggle:()=>{this.setState(st=>({employees:st.employees.map(y=>y.email===x.email?{...y,active:!y.active}:y)}));this.flash(x.name+(x.active?' deactivated':' reactivated'));},
+        onAskRemove:()=>set({confirmRemove:x.email}),onCancelRemove:()=>set({confirmRemove:null}),
+        onRemove:()=>{this.setState(st=>({employees:st.employees.filter(y=>y.email!==x.email),confirmRemove:null}));this.flash(x.name+' removed');}};})};
+  }
+}
+</script>
+</body>
+</html>
