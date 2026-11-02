@@ -14,8 +14,8 @@ interface Props {
 type Pending = { id: string; action: 'remove' } | { id: string; action: 'role'; role: Role }
 
 const roleChange: Record<Role, { button: string; note: string; done: string }> = {
-  manager: { button: 'Make manager', note: "They'll see all data and stop submitting EODs.", done: 'is now a manager' },
-  employee: { button: 'Make employee', note: "They'll lose manager access and submit EODs.", done: 'is now an employee' },
+  manager: { button: 'Make manager', note: "They'll see all data, and their EODs become optional.", done: 'is now a manager' },
+  employee: { button: 'Make employee', note: "They'll lose manager access and be expected to submit EODs.", done: 'is now an employee' },
 }
 
 export default function Employees({ user, onToast }: Props) {

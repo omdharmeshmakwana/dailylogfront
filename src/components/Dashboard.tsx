@@ -40,7 +40,7 @@ export default function Dashboard({ user, onToast }: Props) {
   const board = useApi(() => api.dashboard({ date, period, project, episode, employee }), [date, period, project, episode, employee])
 
   const activeProjects = (lists.data?.[0] ?? []).filter((item) => !item.archived)
-  const activeEmployees = (lists.data?.[1] ?? []).filter((item) => item.active && item.role === 'employee')
+  const activeEmployees = (lists.data?.[1] ?? []).filter((item) => item.active)
   const currentProject = activeProjects.find((item) => item.name === project)
   const data = board.data
   const hasFilters = project || episode || employee
@@ -84,7 +84,7 @@ export default function Dashboard({ user, onToast }: Props) {
       const body = [
         'Hi Rushik,',
         '',
-        "Here's the latest Daily Log data: EOD logs, attendance, employees, projects and holidays, as CSV files in a .zip.",
+        "Here's the latest Daily Log data: everyone's EODs and attendance, day by day, in one CSV sheet.",
         '',
         `Download: ${link.url}`,
         '',

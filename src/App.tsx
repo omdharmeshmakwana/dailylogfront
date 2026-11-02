@@ -136,6 +136,7 @@ export default function App() {
       {session.role === 'manager' && page === 'attendance' ? <Attendance onToast={setToast} /> : null}
       {session.role === 'manager' && page === 'projects' ? <Projects onToast={setToast} /> : null}
       {session.role === 'manager' && page === 'employees' ? <Employees user={session} onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'eod' ? <EmployeeEod user={session} onToast={setToast} /> : null}
 
       {toastElement}
     </div>

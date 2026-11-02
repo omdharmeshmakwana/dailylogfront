@@ -1,6 +1,6 @@
 export type Role = 'employee' | 'manager'
 export type Theme = 'light' | 'dark'
-export type ManagerPage = 'dashboard' | 'attendance' | 'projects' | 'employees'
+export type ManagerPage = 'dashboard' | 'attendance' | 'projects' | 'employees' | 'eod'
 export type WorkType = 'image' | 'clip'
 export type OutputKey = 'charsheet' | 'location' | 'storyboard' | 'keyframe' | 'clip' | 'lipsync' | 'extend' | 'upscale'
 export type WorkKind = 'Fresh' | 'Revision' | 'Test' | 'Trailer' | 'Training'

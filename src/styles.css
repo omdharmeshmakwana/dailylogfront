@@ -409,7 +409,9 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 @media (max-width: 520px) {
   .topbar__actions { gap: 2px; }
   .topbar__actions .button { padding: 0 8px; }
-  .nav__item { padding: 0 8px; font-size: 13px; }
+  /* All five manager tabs fit from 360px up; narrower screens scroll the strip. */
+  .nav { gap: 2px; }
+  .nav__item { flex: 1 0 auto; padding: 0 4px; font-size: 12px; }
   .page-heading--split { align-items: flex-start; }
   .scene-card { padding: 16px; }
   .notice--ok { align-items: flex-start; flex-direction: column; }

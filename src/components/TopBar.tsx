@@ -17,6 +17,7 @@ const pages: { value: ManagerPage; label: string }[] = [
   { value: 'attendance', label: 'Attendance' },
   { value: 'projects', label: 'Projects' },
   { value: 'employees', label: 'Employees' },
+  { value: 'eod', label: 'My EOD' },
 ]
 
 export default function TopBar({ role, page, name, theme, exporting, onPage, onExport, onToggleTheme, onSignOut }: Props) {
@@ -44,7 +45,7 @@ export default function TopBar({ role, page, name, theme, exporting, onPage, onE
         ) : null}
         <div className="topbar__actions">
           {role === 'manager' ? (
-            <button className="button button--secondary button--compact" type="button" disabled={exporting} onClick={onExport} title="Download all data as CSV files (.zip)">
+            <button className="button button--secondary button--compact" type="button" disabled={exporting} onClick={onExport} title="Download EODs and attendance as one CSV sheet">
               {exporting ? 'Exporting…' : 'Export data'}
             </button>
           ) : null}

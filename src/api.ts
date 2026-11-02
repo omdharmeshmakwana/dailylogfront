@@ -228,10 +228,10 @@ export const api = {
       request<{ date: string; sent: { name: string; email: string; sentAt: string }[]; unknown: string[] }>('POST', '/api/reminders', { emails }),
   },
 
-  // Everything in the database as CSV files in one .zip.
+  // EODs and attendance together as one CSV sheet.
   async exportData() {
     const response = await send('GET', '/api/export')
-    const filename = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? 'daily-log-export.zip'
+    const filename = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? 'daily-log-export.csv'
     const blob = await response.blob().catch(() => { throw unreachable() })
     return { filename, blob }
   },

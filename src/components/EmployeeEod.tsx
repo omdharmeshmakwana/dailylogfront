@@ -89,12 +89,14 @@ function EodForm({ user, mine, projects, onToast }: FormProps) {
     : deadline === 'near'
       ? { tone: 'warn', text: `EOD due ${dueLabel} · ${minutesLeft} min left` }
       : { tone: 'neutral', text: `EOD due ${dueLabel}` }
+  // Managers use this page too; their EODs go straight to the dashboard.
+  const whoSees = user.role === 'manager' ? "today's work shows on the dashboard" : "your manager sees today's work"
   const banner = deadline === 'overdue'
-    ? { tone: 'danger', title: 'Your EOD is overdue', text: `It was due at ${dueLabel}. Submit now so your manager sees today's work.` }
+    ? { tone: 'danger', title: 'Your EOD is overdue', text: `It was due at ${dueLabel}. Submit now so ${whoSees}.` }
     : deadline === 'near'
       ? { tone: 'warn', title: `EOD due in ${minutesLeft} ${minutesLeft === 1 ? 'minute' : 'minutes'}`, text: `Save any open lines in your scene entries and submit before ${dueLabel}.` }
       : mine.reminderSentAt
-        ? { tone: 'warn', title: 'Your manager sent a reminder', text: `Submit today's EOD before ${dueLabel} so your manager sees today's work.` }
+        ? { tone: 'warn', title: 'Your manager sent a reminder', text: `Submit today's EOD before ${dueLabel} so ${whoSees}.` }
         : null
 
   const updateEntry = (id: string, updater: Partial<SceneEntry> | ((entry: SceneEntry) => SceneEntry)) => {
@@ -168,7 +170,7 @@ function EodForm({ user, mine, projects, onToast }: FormProps) {
         <section className="notice notice--ok">
           <div>
             <strong>EOD submitted at {time}</strong>
-            <p>Thanks, {user.name}. Your manager can see it on the dashboard now.</p>
+            <p>Thanks, {user.name}. {user.role === 'manager' ? "It's on the dashboard now." : 'Your manager can see it on the dashboard now.'}</p>
           </div>
           <button className="button button--secondary" type="button" onClick={() => setStage('edit')}>Edit EOD</button>
         </section>
