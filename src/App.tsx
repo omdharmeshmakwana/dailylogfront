@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, ApiError, getToken, SESSION_EXPIRED, type SessionUser } from './api'
+import { api, ApiError, errorMessage, getToken, SESSION_EXPIRED, type SessionUser } from './api'
 import Attendance from './components/Attendance'
 import Dashboard from './components/Dashboard'
 import EmployeeEod from './components/EmployeeEod'
@@ -28,6 +28,7 @@ export default function App() {
   const [restoring, setRestoring] = useState(() => Boolean(getToken()))
   const [page, setPage] = useState<ManagerPage>(() => readStored('dl-page', 'dashboard'))
   const [toast, setToast] = useState('')
+  const [exporting, setExporting] = useState(false)
   const slowRestore = useSlow(restoring)
 
   useEffect(() => {
@@ -75,6 +76,24 @@ export default function App() {
     setSession(null)
   }
 
+  const exportData = async () => {
+    setExporting(true)
+    try {
+      const { filename, blob } = await api.exportData()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = filename
+      anchor.click()
+      URL.revokeObjectURL(url)
+      setToast(`Downloaded ${filename}`)
+    } catch (error) {
+      setToast(errorMessage(error))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const toastElement = (
     <div className={`toast ${toast ? 'toast--show' : ''}`} role="status" aria-live="polite">
       {toast}
@@ -105,16 +124,18 @@ export default function App() {
         page={page}
         name={session.name}
         theme={theme}
+        exporting={exporting}
         onPage={setPage}
+        onExport={exportData}
         onToggleTheme={toggleTheme}
         onSignOut={signOut}
       />
 
       {session.role === 'employee' ? <EmployeeEod user={session} onToast={setToast} /> : null}
-      {session.role === 'manager' && page === 'dashboard' ? <Dashboard onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'dashboard' ? <Dashboard user={session} onToast={setToast} /> : null}
       {session.role === 'manager' && page === 'attendance' ? <Attendance onToast={setToast} /> : null}
       {session.role === 'manager' && page === 'projects' ? <Projects onToast={setToast} /> : null}
-      {session.role === 'manager' && page === 'employees' ? <Employees onToast={setToast} /> : null}
+      {session.role === 'manager' && page === 'employees' ? <Employees user={session} onToast={setToast} /> : null}
 
       {toastElement}
     </div>

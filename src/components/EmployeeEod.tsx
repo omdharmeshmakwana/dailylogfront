@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage, type Eod, type MyEod, type SessionUser } from '../api'
-import { emptyScene, entryTitle, kinds, lineSummary, outputs, statuses, statusTone, uid } from '../data'
+import { emptyScene, kinds, lineSummary, outputs, statuses, uid } from '../data'
 import { fmtClock, fmtDay, fmtTime } from '../dates'
 import { useApi } from '../hooks'
 import type { Project, SceneEntry, WorkType } from '../types'
 import LoadState from './LoadState'
+import SubmittedEod from './SubmittedEod'
 
 interface Props {
   user: SessionUser
@@ -172,33 +173,7 @@ function EodForm({ user, mine, projects, onToast }: FormProps) {
           <button className="button button--secondary" type="button" onClick={() => setStage('edit')}>Edit EOD</button>
         </section>
 
-        <div className="submitted-list">
-          {entries.map((entry) => (
-            <article className="card submitted-card" key={entry.id}>
-              <div className="submitted-card__head">
-                <h2>{entryTitle(entry)}</h2>
-                <div className="badge-row">
-                  <span className="badge badge--neutral">{entry.kind}</span>
-                  <span className={`badge badge--${statusTone(entry.status)}`}>{entry.status}</span>
-                </div>
-              </div>
-              {entry.lines.map((line) => (
-                <div className="logged-line logged-line--readonly" key={line.id}>
-                  <span className="badge badge--neutral">{line.type === 'image' ? 'Image' : 'Clip'}</span>
-                  <strong>{lineSummary(line)}</strong>
-                  <span>{line.text}</span>
-                </div>
-              ))}
-            </article>
-          ))}
-        </div>
-
-        {remarks || plan ? (
-          <section className="notes-grid">
-            {remarks ? <article className="card"><h2>Suggestion / remarks / feedback</h2><p>{remarks}</p></article> : null}
-            {plan ? <article className="card"><h2>Tomorrow's plan and availability</h2><p>{plan}</p></article> : null}
-          </section>
-        ) : null}
+        <SubmittedEod entries={entries} remarks={remarks} plan={plan} />
       </main>
     )
   }

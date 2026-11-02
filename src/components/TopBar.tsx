@@ -5,7 +5,9 @@ interface Props {
   page: ManagerPage
   name: string
   theme: Theme
+  exporting: boolean
   onPage: (page: ManagerPage) => void
+  onExport: () => void
   onToggleTheme: () => void
   onSignOut: () => void
 }
@@ -17,7 +19,7 @@ const pages: { value: ManagerPage; label: string }[] = [
   { value: 'employees', label: 'Employees' },
 ]
 
-export default function TopBar({ role, page, name, theme, onPage, onToggleTheme, onSignOut }: Props) {
+export default function TopBar({ role, page, name, theme, exporting, onPage, onExport, onToggleTheme, onSignOut }: Props) {
   return (
     <header className="topbar">
       <div className="topbar__inner">
@@ -41,6 +43,11 @@ export default function TopBar({ role, page, name, theme, onPage, onToggleTheme,
           </nav>
         ) : null}
         <div className="topbar__actions">
+          {role === 'manager' ? (
+            <button className="button button--secondary button--compact" type="button" disabled={exporting} onClick={onExport} title="Download all data as CSV files (.zip)">
+              {exporting ? 'Exporting…' : 'Export data'}
+            </button>
+          ) : null}
           <button className="button button--secondary button--compact" type="button" onClick={onToggleTheme}>
             {theme === 'light' ? 'Dark' : 'Light'}
           </button>

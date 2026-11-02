@@ -38,6 +38,7 @@ export interface Project {
 export interface Employee {
   name: string
   email: string
+  role: Role
   active: boolean
 }
 

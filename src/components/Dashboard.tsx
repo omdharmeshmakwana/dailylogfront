@@ -1,13 +1,17 @@
 import { useState } from 'react'
-import { api, errorMessage, type Dashboard as DashboardData, type PlanFlag } from '../api'
+import { api, errorMessage, type Dashboard as DashboardData, type PlanFlag, type SessionUser } from '../api'
 import { allOutputs, entryTitle, lineSummary, statusTone } from '../data'
 import { fmtClock, fmtDay, fmtLongDay, fmtTime } from '../dates'
 import { useApi } from '../hooks'
 import LoadState from './LoadState'
 
 interface Props {
+  user: SessionUser
   onToast: (message: string) => void
 }
+
+// "Send data" opens a Gmail draft to this address.
+const DATA_RECIPIENT = 'rushik@faiblemedia.com'
 
 const flags: Record<PlanFlag, { label: string; tone: string }> = {
   leave: { label: 'On leave', tone: 'violet' },
@@ -23,7 +27,7 @@ function checkInLabel(person: DashboardData['missed'][number]) {
   return person.checkIn ? `Checked in ${person.checkIn}${suffix}` : `No check-in${suffix}`
 }
 
-export default function Dashboard({ onToast }: Props) {
+export default function Dashboard({ user, onToast }: Props) {
   const [date, setDate] = useState('')
   const [period, setPeriod] = useState<DashboardData['period']>('day')
   const [project, setProject] = useState('')
@@ -31,11 +35,12 @@ export default function Dashboard({ onToast }: Props) {
   const [employee, setEmployee] = useState('')
   const [expanded, setExpanded] = useState<string[]>([])
   const [reminding, setReminding] = useState(false)
+  const [sending, setSending] = useState(false)
   const lists = useApi(() => Promise.all([api.projects.list(), api.employees.list()]), [])
   const board = useApi(() => api.dashboard({ date, period, project, episode, employee }), [date, period, project, episode, employee])
 
   const activeProjects = (lists.data?.[0] ?? []).filter((item) => !item.archived)
-  const activeEmployees = (lists.data?.[1] ?? []).filter((item) => item.active)
+  const activeEmployees = (lists.data?.[1] ?? []).filter((item) => item.active && item.role === 'employee')
   const currentProject = activeProjects.find((item) => item.name === project)
   const data = board.data
   const hasFilters = project || episode || employee
@@ -60,6 +65,41 @@ export default function Dashboard({ onToast }: Props) {
       onToast(errorMessage(reason))
     } finally {
       setReminding(false)
+    }
+  }
+
+  // Gmail drafts can't be given attachments, so the draft carries a 7-day
+  // download link to the full export instead. The tab opens inside the click
+  // (so pop-up blockers allow it) and moves to Gmail once the link is ready.
+  const sendData = async () => {
+    const tab = window.open('', '_blank')
+    if (tab) {
+      tab.opener = null
+      tab.document.title = 'Preparing email…'
+      if (tab.document.body) tab.document.body.textContent = 'Preparing the email…'
+    }
+    setSending(true)
+    try {
+      const link = await api.exportLink()
+      const body = [
+        'Hi Rushik,',
+        '',
+        "Here's the latest Daily Log data: EOD logs, attendance, employees, projects and holidays, as CSV files in a .zip.",
+        '',
+        `Download: ${link.url}`,
+        '',
+        `The link gets a fresh copy of the data each time it's opened and works until ${fmtLongDay(link.expires)}.`,
+      ].join('\n')
+      const fields = { authuser: user.email, view: 'cm', fs: '1', to: DATA_RECIPIENT, su: `Daily Log data – ${fmtLongDay(link.today)}`, body }
+      const compose = `https://mail.google.com/mail/?${Object.entries(fields).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&')}`
+      if (tab) tab.location.href = compose
+      else window.location.assign(compose)
+      onToast('Gmail draft opened. Press Send there.')
+    } catch (reason) {
+      tab?.close()
+      onToast(errorMessage(reason))
+    } finally {
+      setSending(false)
     }
   }
 
@@ -101,6 +141,9 @@ export default function Dashboard({ onToast }: Props) {
             {activeEmployees.map((item) => <option key={item.id} value={item.email}>{item.name}</option>)}
           </select>
           {hasFilters ? <button className="button button--text button--accent-text" type="button" onClick={clearFilters}>Clear filters</button> : null}
+          <button className="button button--primary" type="button" disabled={sending} onClick={sendData} title={`Email all data to ${DATA_RECIPIENT}`}>
+            {sending ? 'Preparing…' : 'Send data'}
+          </button>
         </div>
       </section>
 

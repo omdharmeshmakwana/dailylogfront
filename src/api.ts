@@ -137,7 +137,9 @@ function withQuery(path: string, params: object = {}) {
   return query ? `${path}?${query}` : path
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+const unreachable = () => new ApiError(0, "Can't reach the server. Check your connection and try again.")
+
+async function send(method: string, path: string, body?: unknown): Promise<Response> {
   const token = getToken()
   let response: Response
   try {
@@ -150,18 +152,23 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
-    throw new ApiError(0, "Can't reach the server. Check your connection and try again.")
+    throw unreachable()
   }
-  if (response.status === 204) return undefined as T
-  const data = await response.json().catch(() => null)
   if (!response.ok) {
+    const data = await response.json().catch(() => null)
     if (response.status === 401 && token) {
       setToken(null)
       window.dispatchEvent(new Event(SESSION_EXPIRED))
     }
     throw new ApiError(response.status, data?.error || 'Something went wrong. Try again.')
   }
-  return data as T
+  return response
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await send(method, path, body)
+  if (response.status === 204) return undefined as T
+  return (await response.json().catch(() => null)) as T
 }
 
 export const api = {
@@ -190,7 +197,7 @@ export const api = {
     list: () => request<{ employees: TeamMember[] }>('GET', '/api/employees').then((data) => data.employees),
     create: (name: string, email: string) =>
       request<{ employee: TeamMember }>('POST', '/api/employees', { name, email }).then((data) => data.employee),
-    update: (id: string, changes: { name?: string; active?: boolean }) =>
+    update: (id: string, changes: { name?: string; active?: boolean; role?: Role }) =>
       request<{ employee: TeamMember }>('PATCH', `/api/employees/${id}`, changes).then((data) => data.employee),
     remove: (id: string) => request<void>('DELETE', `/api/employees/${id}`),
   },
@@ -220,4 +227,14 @@ export const api = {
     send: (emails: string[]) =>
       request<{ date: string; sent: { name: string; email: string; sentAt: string }[]; unknown: string[] }>('POST', '/api/reminders', { emails }),
   },
+
+  // Everything in the database as CSV files in one .zip.
+  async exportData() {
+    const response = await send('GET', '/api/export')
+    const filename = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? 'daily-log-export.zip'
+    const blob = await response.blob().catch(() => { throw unreachable() })
+    return { filename, blob }
+  },
+  // A 7-day download link to the same export, for emailing.
+  exportLink: () => request<{ url: string; today: string; expires: string }>('POST', '/api/export/link'),
 }
