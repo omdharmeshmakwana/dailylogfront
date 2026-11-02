@@ -263,7 +263,8 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .attendance-title { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .month-switcher { display: flex; align-items: center; gap: 12px; }
 .month-switcher button { width: 36px; height: 36px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 20px; }
-.attendance-legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; }
+/* Stays pinned under the top bar while the employee list scrolls. The negative margin keeps the resting layout unchanged. */
+.attendance-legend { position: sticky; top: 60px; z-index: 20; margin: -8px 0; padding: 8px 0; display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; background: var(--bg); }
 .attendance-legend > span { display: inline-flex; align-items: center; gap: 7px; }
 .att { width: 28px; height: 28px; display: inline-grid; place-items: center; border: 0; border-radius: 6px; font-family: 'Geist Mono Variable', monospace; font-size: 11px; font-weight: 700; }
 .attendance-legend .att { width: 20px; height: 20px; border-radius: 4px; }
@@ -376,6 +377,7 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
   .output-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-rail { display: flex; }
   .attendance-head { align-items: flex-start; }
+  .attendance-legend { position: static; }
   .attendance-editor { grid-template-columns: 1fr auto; }
   .holiday-panel { align-items: stretch; flex-direction: column; }
   .holiday-panel select { width: 100%; }
