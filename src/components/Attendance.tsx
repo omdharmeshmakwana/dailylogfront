@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { attendanceMeta } from '../data'
 import { fmtDay, fmtMonth, isWeekend, monthDays, parseKey, shiftMonth, WEEKDAYS } from '../dates'
@@ -22,6 +22,8 @@ export default function Attendance({ onToast }: Props) {
   const [holidayDay, setHolidayDay] = useState('')
   const [saving, setSaving] = useState(false)
   const sheet = useApi(() => api.attendance.month(month), [month])
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<HTMLElement>(null)
 
   const data = sheet.data
   const today = data?.today ?? ''
@@ -53,6 +55,24 @@ export default function Attendance({ onToast }: Props) {
   const selectedStatus = selected ? getStatus(selected.email, selected.date) : null
   const selectedCheckIn = selected ? records.get(`${selected.email}|${selected.date}`)?.checkIn : null
   const selectedLabel = selected ? `${selected.name} · ${WEEKDAYS[parseKey(selected.date).getDay()]}, ${fmtDay(selected.date)}` : ''
+
+  // The editor opens pinned under the legend (a bottom sheet on phones). If it
+  // ends up covering the clicked cell, nudge the page so the cell stays in view.
+  useEffect(() => {
+    if (!selected) return
+    const frame = window.requestAnimationFrame(() => {
+      const cell = document.querySelector(`[data-cell="${selected.email}|${selected.date}"]`)
+      const editor = editorRef.current
+      if (!cell || !editor || !stickyRef.current) return
+      const isSheet = getComputedStyle(editor).position === 'fixed'
+      const top = isSheet ? (document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0) : stickyRef.current.getBoundingClientRect().bottom
+      const bottom = isSheet ? editor.getBoundingClientRect().top : window.innerHeight
+      const rect = cell.getBoundingClientRect()
+      if (rect.top < top + 8) window.scrollBy({ top: rect.top - top - 8 })
+      else if (rect.bottom > bottom - 8) window.scrollBy({ top: rect.bottom - bottom + 8 })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selected])
 
   const goToMonth = (delta: number) => {
     if (!data) return
@@ -142,22 +162,24 @@ export default function Attendance({ onToast }: Props) {
         </div>
       </section>
 
-      <div className="attendance-legend" aria-label="Attendance legend">
-        {statusOrder.map((status) => <span key={status}><i className={`att att--${attendanceMeta[status].tone}`}>{attendanceMeta[status].short}</i>{attendanceMeta[status].label}</span>)}
-        <span><i className="att att--weekend" />Weekend</span>
-      </div>
+      <div className="attendance-sticky" ref={stickyRef}>
+        <div className="attendance-legend" aria-label="Attendance legend">
+          {statusOrder.map((status) => <span key={status}><i className={`att att--${attendanceMeta[status].tone}`}>{attendanceMeta[status].short}</i>{attendanceMeta[status].label}</span>)}
+          <span><i className="att att--weekend" />Weekend</span>
+        </div>
 
-      {selected ? (
-        <section className="attendance-editor">
-          <div><strong>{selectedLabel}</strong><span>{selectedCheckIn ? `Checked in ${selectedCheckIn}` : selectedStatus === 'future' ? 'Not checked in yet' : 'No check-in'}</span></div>
-          <div className="attendance-editor__buttons">
-            {statusOrder.map((status) => (
-              <button className={selectedStatus === status ? `att-button att-button--${attendanceMeta[status].tone}` : 'att-button'} type="button" key={status} disabled={saving} onClick={() => setStatus(status)}>{attendanceMeta[status].label}</button>
-            ))}
-          </div>
-          <button className="editor-close" type="button" aria-label="Close attendance editor" onClick={() => setSelected(null)}>×</button>
-        </section>
-      ) : null}
+        {selected ? (
+          <section className="attendance-editor" ref={editorRef}>
+            <div><strong>{selectedLabel}</strong><span>{selectedCheckIn ? `Checked in ${selectedCheckIn}` : selectedStatus === 'future' ? 'Not checked in yet' : 'No check-in'}</span></div>
+            <div className="attendance-editor__buttons">
+              {statusOrder.map((status) => (
+                <button className={selectedStatus === status ? `att-button att-button--${attendanceMeta[status].tone}` : 'att-button'} type="button" key={status} disabled={saving} onClick={() => setStatus(status)}>{attendanceMeta[status].label}</button>
+              ))}
+            </div>
+            <button className="editor-close" type="button" aria-label="Close attendance editor" onClick={() => setSelected(null)}>×</button>
+          </section>
+        ) : null}
+      </div>
 
       {holidayPanel ? (
         <section className="holiday-panel">
@@ -188,9 +210,9 @@ export default function Attendance({ onToast }: Props) {
                   const isSelected = selected?.email === employee.email && selected.date === date
                   const select = () => { setSelected({ email: employee.email, name: employee.name, date }); setHolidayPanel(false) }
                   if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
-                  if (status === 'future') return <div className="att-cell" key={date}><button className="att-future" type="button" onClick={select} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
+                  if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={`${employee.email}|${date}`} onClick={select} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
                   const meta = attendanceMeta[status]
-                  return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" onClick={select} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
+                  return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={`${employee.email}|${date}`} onClick={select} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
                 })}
                 {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
               </div>
