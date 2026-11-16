@@ -279,6 +279,8 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .att-button { min-height: 38px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 13px; }
 .att-button--ok { color: var(--ok); background: var(--ok-soft); border-color: var(--ok); }.att-button--danger { color: var(--danger); background: var(--danger-soft); border-color: var(--danger); }.att-button--warn { color: var(--warn); background: var(--warn-soft); border-color: var(--warn); }.att-button--info { color: var(--info); background: var(--info-soft); border-color: var(--info); }.att-button--violet { color: var(--violet); background: var(--violet-soft); border-color: var(--violet); }.att-button--hol { color: var(--hol); background: var(--hol-soft); border-color: var(--hol); }
 .editor-close { width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); font-size: 20px; }
+.attendance-editor--empty { border: 1.5px dashed var(--line-2); }
+.attendance-editor--empty .editor-close { visibility: hidden; }
 .holiday-panel { padding: 16px; display: flex; align-items: flex-end; gap: 10px; border: 1.5px solid var(--accent); border-radius: 14px; background: var(--surface); }
 .holiday-panel > div { flex: 1; }
 .holiday-panel h2 { margin-bottom: 3px; }
@@ -298,6 +300,8 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .att-total { border-left: 1px solid var(--line); background: var(--surface); font-family: 'Geist Mono Variable', monospace; font-size: 12px; }
 .att-total--ok { color: var(--ok); }.att-total--danger { color: var(--danger); }.att-total--warn { color: var(--warn); }.att-total--info { color: var(--info); }.att-total--violet { color: var(--violet); }
 .att-future { width: 28px; height: 28px; border: 1px dashed var(--line-2); border-radius: 6px; background: transparent; }
+/* Cells are picked by click and dropped by double-click: no text selection or double-tap zoom. */
+.attendance-grid .att, .att-future { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 .page-hint { color: var(--muted); font-size: 13px; }
 
 .create-panel { padding: 16px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 14px; border: 1.5px solid var(--accent); border-radius: 14px; background: var(--surface); }
@@ -394,8 +398,9 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
   /* Phones: the top bar wraps, so nothing is pinned at the top; the editor opens as a bottom sheet instead. */
   .attendance-sticky { position: static; }
   .attendance-editor { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 40; grid-template-columns: 1fr auto; box-shadow: 0 10px 30px oklch(0.2 0.01 260 / 0.2); }
-  .attendance-page:has(.attendance-editor) { padding-bottom: 260px; }
-  .attendance-page:has(.attendance-editor) ~ .toast { bottom: 250px; }
+  .attendance-editor--empty { display: none; }
+  .attendance-page:has(.attendance-editor:not(.attendance-editor--empty)) { padding-bottom: 260px; }
+  .attendance-page:has(.attendance-editor:not(.attendance-editor--empty)) ~ .toast { bottom: 250px; }
   .holiday-panel { align-items: stretch; flex-direction: column; }
   .holiday-panel select { width: 100%; }
   .create-panel, .employee-create { grid-template-columns: 1fr; }

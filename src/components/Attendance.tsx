@@ -11,13 +11,18 @@ interface Props {
 }
 
 type CellStatus = AttendanceStatus | 'weekend' | 'future'
+type Cell = { email: string; name: string; date: string }
 
 const statusOrder: AttendanceStatus[] = ['present', 'absent', 'half', 'wfh', 'leave', 'holiday']
 const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const cellKey = (cell: { email: string; date: string }) => `${cell.email}|${cell.date}`
+const dayLabel = (date: string) => `${WEEKDAYS[parseKey(date).getDay()]}, ${fmtDay(date)}`
 
 export default function Attendance({ onToast }: Props) {
   const [month, setMonth] = useState('')
-  const [selected, setSelected] = useState<{ email: string; name: string; date: string } | null>(null)
+  // Cells picked for editing. Click adds a cell, double-click removes it.
+  const [selected, setSelected] = useState<Cell[]>([])
+  const [lastPicked, setLastPicked] = useState<Cell | null>(null)
   const [holidayPanel, setHolidayPanel] = useState(false)
   const [holidayDay, setHolidayDay] = useState('')
   const [saving, setSaving] = useState(false)
@@ -28,10 +33,11 @@ export default function Attendance({ onToast }: Props) {
   const data = sheet.data
   const today = data?.today ?? ''
   const days = useMemo(() => (data ? monthDays(data.month) : []), [data])
-  const records = useMemo(() => new Map((data?.records ?? []).map((record) => [`${record.email}|${record.date}`, record])), [data])
+  const records = useMemo(() => new Map((data?.records ?? []).map((record) => [cellKey(record), record])), [data])
   const holidays = useMemo(() => new Set(data?.holidays ?? []), [data])
   const weekdays = days.filter((date) => !isWeekend(date))
   const monthLabel = month ? fmtMonth(month) : data ? fmtMonth(data.month) : ''
+  const selectedKeys = new Set(selected.map(cellKey))
 
   // A working day without a mark counts as present, the same rule the dashboard uses.
   const getStatus = (email: string, date: string): CellStatus => {
@@ -52,16 +58,30 @@ export default function Attendance({ onToast }: Props) {
     return { employee, totals }
   })
 
-  const selectedStatus = selected ? getStatus(selected.email, selected.date) : null
-  const selectedCheckIn = selected ? records.get(`${selected.email}|${selected.date}`)?.checkIn : null
-  const selectedLabel = selected ? `${selected.name} · ${WEEKDAYS[parseKey(selected.date).getDay()]}, ${fmtDay(selected.date)}` : ''
+  // The status the selection shares, if any, so its button shows as current.
+  const selectedStatuses = new Set(selected.map((cell) => getStatus(cell.email, cell.date)))
+  const sharedStatus = selectedStatuses.size === 1 ? [...selectedStatuses][0] : null
 
-  // The editor opens pinned under the legend (a bottom sheet on phones). If it
-  // ends up covering the clicked cell, nudge the page so the cell stays in view.
+  const summary = (() => {
+    if (!selected.length) return { title: 'Select cells to mark', detail: 'Click cells to select them. Double-click to deselect.' }
+    if (selected.length === 1) {
+      const [cell] = selected
+      const checkIn = records.get(cellKey(cell))?.checkIn
+      return { title: `${cell.name} · ${dayLabel(cell.date)}`, detail: checkIn ? `Checked in ${checkIn}` : sharedStatus === 'future' ? 'Not checked in yet' : 'No check-in' }
+    }
+    const names = [...new Set(selected.map((cell) => cell.name))]
+    const dates = [...new Set(selected.map((cell) => cell.date))]
+    const people = names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`
+    const detail = dates.length === 1 ? `${people} · ${dayLabel(dates[0])}` : names.length === 1 ? `${names[0]} · ${dates.length} days` : `${names.length} people · ${dates.length} days`
+    return { title: `${selected.length} selected`, detail }
+  })()
+
+  // On phones the editor is a bottom sheet. If it ends up covering the cell
+  // just picked, nudge the page so that cell stays in view.
   useEffect(() => {
-    if (!selected) return
+    if (!lastPicked) return
     const frame = window.requestAnimationFrame(() => {
-      const cell = document.querySelector(`[data-cell="${selected.email}|${selected.date}"]`)
+      const cell = document.querySelector(`[data-cell="${cellKey(lastPicked)}"]`)
       const editor = editorRef.current
       if (!cell || !editor || !stickyRef.current) return
       const isSheet = getComputedStyle(editor).position === 'fixed'
@@ -72,39 +92,60 @@ export default function Attendance({ onToast }: Props) {
       else if (rect.bottom > bottom - 8) window.scrollBy({ top: rect.bottom - bottom + 8 })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [selected])
+  }, [lastPicked])
+
+  const clearSelection = () => {
+    setSelected([])
+    setLastPicked(null)
+  }
+
+  // Click only ever adds, so the two clicks of a double-click can't undo each other.
+  const pick = (cell: Cell) => {
+    setSelected((current) => (current.some((item) => cellKey(item) === cellKey(cell)) ? current : [...current, cell]))
+    setLastPicked(cell)
+    setHolidayPanel(false)
+  }
+  const unpick = (cell: Cell) => setSelected((current) => current.filter((item) => cellKey(item) !== cellKey(cell)))
 
   const goToMonth = (delta: number) => {
     if (!data) return
     setMonth(shiftMonth(month || data.month, delta))
-    setSelected(null)
+    clearSelection()
     setHolidayPanel(false)
   }
 
+  // Marks every selected cell; the selection stays so the result is visible.
   const setStatus = async (status: AttendanceStatus) => {
-    if (!selected) return
+    const cells = selected
+    if (!cells.length) return
     setSaving(true)
-    try {
-      const record = await api.attendance.set({ email: selected.email, date: selected.date, status })
-      sheet.setData((current) => ({
-        ...current,
-        records: [
-          ...current.records.filter((item) => !(item.email === selected.email && item.date === selected.date)),
-          ...(record ? [record] : []),
-        ],
-      }))
-      onToast(`${selected.name} marked ${attendanceMeta[status].label.toLowerCase()} for ${fmtDay(selected.date)}`)
-    } catch (reason) {
-      onToast(errorMessage(reason))
-    } finally {
-      setSaving(false)
+    const results = await Promise.allSettled(cells.map((cell) => api.attendance.set({ email: cell.email, date: cell.date, status })))
+    const savedKeys = new Set(cells.filter((_, index) => results[index].status === 'fulfilled').map(cellKey))
+    const saved = results.flatMap((result) => (result.status === 'fulfilled' && result.value ? [result.value] : []))
+    sheet.setData((current) => ({
+      ...current,
+      records: [...current.records.filter((item) => !savedKeys.has(cellKey(item))), ...saved],
+    }))
+    setSaving(false)
+
+    const label = attendanceMeta[status].label.toLowerCase()
+    const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected')
+    if (failure) {
+      onToast(savedKeys.size ? `Marked ${savedKeys.size} of ${cells.length} as ${label}. ${errorMessage(failure.reason)}` : errorMessage(failure.reason))
+      return
     }
+    const names = new Set(cells.map((cell) => cell.name))
+    const dates = new Set(cells.map((cell) => cell.date))
+    if (cells.length === 1) onToast(`${cells[0].name} marked ${label} for ${fmtDay(cells[0].date)}`)
+    else if (dates.size === 1) onToast(`${cells.length} people marked ${label} for ${fmtDay(cells[0].date)}`)
+    else if (names.size === 1) onToast(`${cells[0].name} marked ${label} for ${cells.length} days`)
+    else onToast(`${cells.length} cells marked ${label}`)
   }
 
   const openHolidayPanel = () => {
     setHolidayDay(weekdays.find((date) => date >= today && !holidays.has(date)) ?? weekdays[0] ?? '')
     setHolidayPanel(true)
-    setSelected(null)
+    clearSelection()
   }
 
   const markHoliday = async () => {
@@ -168,17 +209,16 @@ export default function Attendance({ onToast }: Props) {
           <span><i className="att att--weekend" />Weekend</span>
         </div>
 
-        {selected ? (
-          <section className="attendance-editor" ref={editorRef}>
-            <div><strong>{selectedLabel}</strong><span>{selectedCheckIn ? `Checked in ${selectedCheckIn}` : selectedStatus === 'future' ? 'Not checked in yet' : 'No check-in'}</span></div>
-            <div className="attendance-editor__buttons">
-              {statusOrder.map((status) => (
-                <button className={selectedStatus === status ? `att-button att-button--${attendanceMeta[status].tone}` : 'att-button'} type="button" key={status} disabled={saving} onClick={() => setStatus(status)}>{attendanceMeta[status].label}</button>
-              ))}
-            </div>
-            <button className="editor-close" type="button" aria-label="Close attendance editor" onClick={() => setSelected(null)}>×</button>
-          </section>
-        ) : null}
+        {/* Always shown on wide screens so picking the first cell doesn't shift the grid under the pointer. */}
+        <section className={`attendance-editor ${selected.length ? '' : 'attendance-editor--empty'}`} ref={editorRef} aria-label="Mark selected cells">
+          <div><strong>{summary.title}</strong><span>{summary.detail}</span></div>
+          <div className="attendance-editor__buttons">
+            {statusOrder.map((status) => (
+              <button className={sharedStatus === status ? `att-button att-button--${attendanceMeta[status].tone}` : 'att-button'} type="button" key={status} disabled={saving || !selected.length} onClick={() => setStatus(status)}>{attendanceMeta[status].label}</button>
+            ))}
+          </div>
+          <button className="editor-close" type="button" aria-label="Clear selection" title="Clear selection" disabled={!selected.length} onClick={clearSelection}>×</button>
+        </section>
       </div>
 
       {holidayPanel ? (
@@ -207,12 +247,13 @@ export default function Attendance({ onToast }: Props) {
                 <div className="att-name att-sticky">{employee.name}</div>
                 {days.map((date) => {
                   const status = getStatus(employee.email, date)
-                  const isSelected = selected?.email === employee.email && selected.date === date
-                  const select = () => { setSelected({ email: employee.email, name: employee.name, date }); setHolidayPanel(false) }
+                  const cell = { email: employee.email, name: employee.name, date }
+                  const isSelected = selectedKeys.has(cellKey(cell))
+                  const handlers = { onClick: () => pick(cell), onDoubleClick: () => unpick(cell) }
                   if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
-                  if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={`${employee.email}|${date}`} onClick={select} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
+                  if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
                   const meta = attendanceMeta[status]
-                  return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={`${employee.email}|${date}`} onClick={select} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
+                  return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
                 })}
                 {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
               </div>
@@ -221,7 +262,7 @@ export default function Attendance({ onToast }: Props) {
         </section>
       )}
       {data && !rows.length && !sheet.loading ? <p className="empty-state">No active employees yet. Add them on the Employees page.</p> : null}
-      <p className="page-hint">Select a cell to edit attendance. Working days without a mark count as present. Weekends are not counted in totals.</p>
+      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to deselect it. Working days without a mark count as present. Weekends are not counted in totals.</p>
     </main>
   )
 }
