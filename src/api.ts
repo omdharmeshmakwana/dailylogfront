@@ -99,6 +99,13 @@ export interface AttendanceMonth {
   employees: { id: string; name: string; email: string }[]
   records: AttendanceEntry[]
   holidays: string[]
+  notes: AttendanceNote[]
+}
+
+// A manager's note on one person for the month shown.
+export interface AttendanceNote {
+  email: string
+  note: string
 }
 
 export class ApiError extends Error {
@@ -215,6 +222,9 @@ export const api = {
     month: (month?: string) => request<AttendanceMonth>('GET', withQuery('/api/attendance', { month })),
     set: (input: { email: string; date: string; status: AttendanceStatus | null; checkIn?: string }) =>
       request<{ record: AttendanceEntry | null }>('PUT', '/api/attendance', input).then((data) => data.record),
+    // An empty note removes it.
+    setNote: (input: { email: string; month: string; note: string }) =>
+      request<{ note: AttendanceNote | null }>('PUT', '/api/attendance/notes', input).then((data) => data.note),
   },
 
   holidays: {

@@ -17,29 +17,40 @@ const statusOrder: AttendanceStatus[] = ['present', 'absent', 'half', 'wfh', 'le
 const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const cellKey = (cell: { email: string; date: string }) => `${cell.email}|${cell.date}`
 const dayLabel = (date: string) => `${WEEKDAYS[parseKey(date).getDay()]}, ${fmtDay(date)}`
+const NOTE_MAX = 2000
+
+const PencilIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+)
 
 export default function Attendance({ onToast }: Props) {
   const [month, setMonth] = useState('')
   // Cells picked for editing. Click adds a cell; double-click drops it and erases its mark.
   const [selected, setSelected] = useState<Cell[]>([])
-  const [lastPicked, setLastPicked] = useState<Cell | null>(null)
   const [holidayPanel, setHolidayPanel] = useState(false)
   const [holidayDay, setHolidayDay] = useState('')
   const [saving, setSaving] = useState(false)
+  // The note box open under one person's row (by email), and its draft text.
+  const [noteFor, setNoteFor] = useState<string | null>(null)
+  const [noteDraft, setNoteDraft] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
   const sheet = useApi(() => api.attendance.month(month), [month])
   const stickyRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<HTMLElement>(null)
   const headRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
-  // Where the date row pins: under the legend and status bar on wide screens,
-  // straight under the top bar on phones (where those two don't pin).
-  const [headTop, setHeadTop] = useState(60)
+  // The legend and status bar pin under the top bar, and the date row pins
+  // under them. The top bar wraps to two lines on narrow screens, so measure.
+  const [pins, setPins] = useState({ bar: 60, head: 190 })
 
   const data = sheet.data
   const today = data?.today ?? ''
   const days = useMemo(() => (data ? monthDays(data.month) : []), [data])
   const records = useMemo(() => new Map((data?.records ?? []).map((record) => [cellKey(record), record])), [data])
   const holidays = useMemo(() => new Set(data?.holidays ?? []), [data])
+  const notes = useMemo(() => new Map((data?.notes ?? []).map((item) => [item.email, item.note])), [data])
   const weekdays = days.filter((date) => !isWeekend(date))
   const monthLabel = month ? fmtMonth(month) : data ? fmtMonth(data.month) : ''
   const selectedKeys = new Set(selected.map(cellKey))
@@ -84,36 +95,15 @@ export default function Attendance({ onToast }: Props) {
   useEffect(() => {
     const topbar = document.querySelector<HTMLElement>('.topbar')
     const measure = () => {
-      const block = stickyRef.current
-      if (!block) return
-      const style = getComputedStyle(block)
-      setHeadTop(style.position === 'sticky' ? parseFloat(style.top) + block.offsetHeight : topbar?.offsetHeight ?? 0)
+      const bar = topbar?.offsetHeight ?? 0
+      setPins({ bar, head: bar + (stickyRef.current?.offsetHeight ?? 0) })
     }
     measure()
     const observer = new ResizeObserver(measure)
     if (stickyRef.current) observer.observe(stickyRef.current)
     if (topbar) observer.observe(topbar)
-    window.addEventListener('resize', measure)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', measure)
-    }
+    return () => observer.disconnect()
   }, [])
-
-  // On phones the editor is a bottom sheet. If it covers the cell just picked,
-  // scroll that cell above it. Wide screens never scroll on a pick, so the two
-  // clicks of a double-click always land on the same cell.
-  useEffect(() => {
-    if (!lastPicked) return
-    const frame = window.requestAnimationFrame(() => {
-      const cell = document.querySelector(`[data-cell="${cellKey(lastPicked)}"]`)
-      const editor = editorRef.current
-      if (!cell || !editor || getComputedStyle(editor).position !== 'fixed') return
-      const overlap = cell.getBoundingClientRect().bottom - editor.getBoundingClientRect().top
-      if (overlap > -8) window.scrollBy({ top: overlap + 8 })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [lastPicked])
 
   // The date row and the grid scroll sideways together.
   const syncScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -122,17 +112,13 @@ export default function Attendance({ onToast }: Props) {
     if (other && other.scrollLeft !== source.scrollLeft) other.scrollLeft = source.scrollLeft
   }
 
-  const clearSelection = () => {
-    setSelected([])
-    setLastPicked(null)
-  }
+  const clearSelection = () => setSelected([])
 
   // Click only ever adds, so the two clicks of a double-click can't undo each other.
   const pick = (cell: Cell) => {
     setHolidayPanel(false)
     if (selectedKeys.has(cellKey(cell))) return
     setSelected((current) => (current.some((item) => cellKey(item) === cellKey(cell)) ? current : [...current, cell]))
-    setLastPicked(cell)
   }
   const unpick = (cell: Cell) => setSelected((current) => current.filter((item) => cellKey(item) !== cellKey(cell)))
 
@@ -158,9 +144,40 @@ export default function Attendance({ onToast }: Props) {
     setMonth(shiftMonth(month || data.month, delta))
     clearSelection()
     setHolidayPanel(false)
+    setNoteFor(null)
   }
 
-  // Marks every selected cell; the selection stays so the result is visible.
+  // The pencil opens the note box with what's already written; clicking it again closes it.
+  const toggleNote = (email: string) => {
+    if (noteFor === email) {
+      setNoteFor(null)
+      return
+    }
+    setNoteFor(email)
+    setNoteDraft(notes.get(email) ?? '')
+  }
+
+  const saveNote = async (employee: { name: string; email: string }) => {
+    if (!data) return
+    const text = noteDraft.trim()
+    setNoteSaving(true)
+    try {
+      const saved = await api.attendance.setNote({ email: employee.email, month: data.month, note: text })
+      sheet.setData((current) => ({
+        ...current,
+        notes: [...(current.notes ?? []).filter((item) => item.email !== employee.email), ...(saved ? [saved] : [])],
+      }))
+      setNoteFor(null)
+      onToast(saved ? `Note saved for ${employee.name}` : `Note removed for ${employee.name}`)
+    } catch (reason) {
+      onToast(errorMessage(reason))
+    } finally {
+      setNoteSaving(false)
+    }
+  }
+
+  // Marks every selected cell, then deselects the ones that saved. Any that
+  // failed stay selected so they can be tried again.
   const setStatus = async (status: AttendanceStatus) => {
     const cells = selected
     if (!cells.length) return
@@ -172,6 +189,7 @@ export default function Attendance({ onToast }: Props) {
       ...current,
       records: [...current.records.filter((item) => !savedKeys.has(cellKey(item))), ...saved],
     }))
+    setSelected((current) => current.filter((item) => !savedKeys.has(cellKey(item))))
     setSaving(false)
 
     const label = attendanceMeta[status].label.toLowerCase()
@@ -249,14 +267,14 @@ export default function Attendance({ onToast }: Props) {
         </div>
       </section>
 
-      <div className="attendance-sticky" ref={stickyRef}>
+      <div className="attendance-sticky" ref={stickyRef} style={{ top: pins.bar }}>
         <div className="attendance-legend" aria-label="Attendance legend">
           {statusOrder.map((status) => <span key={status}><i className={`att att--${attendanceMeta[status].tone}`}>{attendanceMeta[status].short}</i>{attendanceMeta[status].label}</span>)}
           <span><i className="att att--weekend" />Weekend</span>
         </div>
 
-        {/* Always shown on wide screens so picking the first cell doesn't shift the grid under the pointer. */}
-        <section className={`attendance-editor ${selected.length ? '' : 'attendance-editor--empty'}`} ref={editorRef} aria-label="Mark selected cells">
+        {/* Always shown, so picking the first cell doesn't shift the grid under the pointer. */}
+        <section className={`attendance-editor ${selected.length ? '' : 'attendance-editor--empty'}`} aria-label="Mark selected cells">
           <div><strong>{summary.title}</strong><span>{summary.detail}</span></div>
           <div className="attendance-editor__buttons">
             {statusOrder.map((status) => (
@@ -281,7 +299,7 @@ export default function Attendance({ onToast }: Props) {
       {!data || sheet.loading || sheet.error ? <LoadState error={sheet.error} onRetry={sheet.reload} /> : (
         <section className="card attendance-board" aria-label={`${monthLabel} attendance grid`}>
           {/* The date row pins under the bar above while the rows scroll past it. */}
-          <div className="attendance-board__head" ref={headRef} style={{ top: headTop }} onScroll={syncScroll}>
+          <div className="attendance-board__head" ref={headRef} style={{ top: pins.head }} onScroll={syncScroll}>
             <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
               <div className="att-head att-name att-sticky">Employee</div>
               {days.map((date) => {
@@ -295,7 +313,19 @@ export default function Attendance({ onToast }: Props) {
             <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
               {rows.map(({ employee, totals }) => (
                 <div className="attendance-grid__row" style={{ display: 'contents' }} key={employee.email}>
-                  <div className="att-name att-sticky">{employee.name}</div>
+                  <div className="att-name att-sticky">
+                    <span className="att-name__text">{employee.name}</span>
+                    <button
+                      className={`att-note-toggle ${notes.has(employee.email) ? 'att-note-toggle--has' : ''}`}
+                      type="button"
+                      aria-expanded={noteFor === employee.email}
+                      aria-label={notes.has(employee.email) ? `Edit note for ${employee.name}` : `Add a note for ${employee.name}`}
+                      title={notes.get(employee.email) ?? `Add a note for ${employee.name}`}
+                      onClick={() => toggleNote(employee.email)}
+                    >
+                      <PencilIcon />
+                    </button>
+                  </div>
                   {days.map((date) => {
                     const status = getStatus(employee.email, date)
                     const cell = { email: employee.email, name: employee.name, date }
@@ -307,6 +337,39 @@ export default function Attendance({ onToast }: Props) {
                     return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
                   })}
                   {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
+                  {noteFor === employee.email ? (
+                    <div className="att-note-row">
+                      <div className="att-note">
+                        <label htmlFor="att-note-text">Note for {employee.name} · {monthLabel}</label>
+                        <textarea
+                          id="att-note-text"
+                          autoFocus
+                          rows={3}
+                          maxLength={NOTE_MAX}
+                          value={noteDraft}
+                          placeholder="e.g. Leave approved for 12–14 Nov"
+                          onFocus={(event) => event.currentTarget.setSelectionRange(event.currentTarget.value.length, event.currentTarget.value.length)}
+                          onChange={(event) => setNoteDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') setNoteFor(null)
+                            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) saveNote(employee)
+                          }}
+                        />
+                        <div className="att-note__actions">
+                          <small>Shows in the Remarks column of the data export.</small>
+                          <button className="button button--secondary button--compact" type="button" onClick={() => setNoteFor(null)}>Cancel</button>
+                          <button
+                            className="button button--primary button--compact"
+                            type="button"
+                            disabled={noteSaving || noteDraft.trim() === (notes.get(employee.email) ?? '')}
+                            onClick={() => saveNote(employee)}
+                          >
+                            {!noteDraft.trim() && notes.has(employee.email) ? 'Remove note' : 'Save note'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -314,7 +377,7 @@ export default function Attendance({ onToast }: Props) {
         </section>
       )}
       {data && !rows.length && !sheet.loading ? <p className="empty-state">No active employees yet. Add them on the Employees page.</p> : null}
-      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Working days without a mark count as present. Weekends are not counted in totals.</p>
+      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Use the pencil next to a name to add a note for the month. Working days without a mark count as present. Weekends are not counted in totals.</p>
     </main>
   )
 }

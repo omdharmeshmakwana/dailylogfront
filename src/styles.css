@@ -263,7 +263,7 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .attendance-title { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .month-switcher { display: flex; align-items: center; gap: 12px; }
 .month-switcher button { width: 36px; height: 36px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 20px; }
-/* Legend and cell editor stay pinned under the top bar while the employee list scrolls. The negative margin keeps the resting layout unchanged. */
+/* Legend and cell editor stay pinned under the top bar (top is set in Attendance.tsx) while the employee list scrolls. The negative margin keeps the resting layout unchanged. */
 .attendance-sticky { position: sticky; top: 60px; z-index: 20; margin: -8px 0; padding: 8px 0; display: flex; flex-direction: column; gap: 18px; background: var(--bg); }
 .attendance-legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; }
 .attendance-legend > span { display: inline-flex; align-items: center; gap: 7px; }
@@ -273,7 +273,9 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .att--weekend, .att-cell--weekend { background: repeating-linear-gradient(135deg, var(--weekend) 0 4px, var(--line) 4px 5px); } /* taste-skill-ignore: attendance calendars use a hatch to distinguish weekends from working days. */
 .att--selected { outline: 2px solid var(--ink); outline-offset: 1px; }
 .attendance-editor { min-height: 70px; padding: 12px 14px 12px 16px; display: grid; grid-template-columns: minmax(150px, auto) 1fr auto; align-items: center; gap: 18px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--surface); }
-.attendance-editor > div:first-child { display: flex; flex-direction: column; }
+/* One line each, so the bar never changes height as cells are picked and the grid never shifts under the pointer. */
+.attendance-editor > div:first-child { display: flex; flex-direction: column; min-width: 0; }
+.attendance-editor > div:first-child > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .attendance-editor > div:first-child span { color: var(--muted); font-size: 13px; }
 .attendance-editor__buttons { display: flex; gap: 7px; flex-wrap: wrap; }
 .att-button { min-height: 38px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 13px; }
@@ -295,7 +297,19 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .attendance-grid { min-width: 1404px; display: grid; font-variant-numeric: tabular-nums; }
 .att-head, .att-cell, .att-name, .att-total { height: 40px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--line); }
 .att-head { color: var(--muted); font-size: 12px; }
-.att-name { justify-content: flex-start; padding: 0 14px; background: var(--surface); border-right: 1px solid var(--line); font-size: 13px; font-weight: 550; }
+.att-name { justify-content: flex-start; gap: 4px; padding: 0 6px 0 14px; background: var(--surface); border-right: 1px solid var(--line); font-size: 13px; font-weight: 550; }
+.att-name__text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Pencil next to each name: muted when empty, accent when the person has a note this month. */
+.att-note-toggle { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
+.att-note-toggle:hover, .att-note-toggle[aria-expanded="true"] { color: var(--ink); background: var(--surface-2); }
+.att-note-toggle--has { color: var(--accent); }
+.att-note-row { grid-column: 1 / -1; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+/* Sticks to the left edge so the box stays in view when the grid is scrolled sideways. */
+.att-note { position: sticky; left: 0; width: min(640px, calc(100vw - 64px)); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.att-note label { font-size: 13px; font-weight: 600; }
+.att-note textarea { min-height: 76px; }
+.att-note__actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.att-note__actions small { margin-right: auto; color: var(--muted); font-size: 12px; }
 .att-sticky { position: sticky; left: 0; z-index: 4; }
 .att-head.att-sticky { z-index: 5; }
 .att-day { flex-direction: column; line-height: 1.05; }
@@ -400,12 +414,15 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
   .output-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-rail { display: flex; }
   .attendance-head { align-items: flex-start; }
-  /* Phones: the top bar wraps, so nothing is pinned at the top; the editor opens as a bottom sheet instead. */
-  .attendance-sticky { position: static; }
-  .attendance-editor { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 40; grid-template-columns: 1fr auto; box-shadow: 0 10px 30px oklch(0.2 0.01 260 / 0.2); }
-  .attendance-editor--empty { display: none; }
-  .attendance-page:has(.attendance-editor:not(.attendance-editor--empty)) { padding-bottom: 260px; }
-  .attendance-page:has(.attendance-editor:not(.attendance-editor--empty)) ~ .toast { bottom: 250px; }
+  /* Narrow screens keep the same pinned stack, made compact: a one-line legend and a three-column button grid. */
+  .attendance-sticky { gap: 10px; }
+  .attendance-legend { flex-wrap: nowrap; gap: 14px; overflow-x: auto; scrollbar-width: none; }
+  .attendance-legend::-webkit-scrollbar { display: none; }
+  .attendance-legend > span { flex: none; }
+  .attendance-editor { min-height: 0; padding: 10px 10px 10px 14px; gap: 10px; }
+  .attendance-editor__buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .att-button { min-height: 34px; padding: 0 4px; font-size: 12px; }
+  .editor-close { width: 32px; height: 32px; }
   .holiday-panel { align-items: stretch; flex-direction: column; }
   .holiday-panel select { width: 100%; }
   .create-panel, .employee-create { grid-template-columns: 1fr; }
@@ -436,8 +453,6 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
   .attendance-title { align-items: flex-start; flex-direction: column; gap: 12px; }
   .attendance-head > .button-row { width: 100%; }
   .attendance-head > .button-row .button { flex: 1; }
-  .attendance-editor__buttons { display: grid; grid-template-columns: 1fr 1fr; }
-  .att-button { padding: 0 8px; }
   .project-card header > div { flex-direction: column; gap: 2px; }
 }
 
