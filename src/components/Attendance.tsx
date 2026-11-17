@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
 import { api, errorMessage } from '../api'
 import { attendanceMeta } from '../data'
 import { fmtDay, fmtMonth, isWeekend, monthDays, parseKey, shiftMonth, WEEKDAYS } from '../dates'
@@ -20,7 +20,7 @@ const dayLabel = (date: string) => `${WEEKDAYS[parseKey(date).getDay()]}, ${fmtD
 
 export default function Attendance({ onToast }: Props) {
   const [month, setMonth] = useState('')
-  // Cells picked for editing. Click adds a cell, double-click removes it.
+  // Cells picked for editing. Click adds a cell; double-click drops it and erases its mark.
   const [selected, setSelected] = useState<Cell[]>([])
   const [lastPicked, setLastPicked] = useState<Cell | null>(null)
   const [holidayPanel, setHolidayPanel] = useState(false)
@@ -29,6 +29,11 @@ export default function Attendance({ onToast }: Props) {
   const sheet = useApi(() => api.attendance.month(month), [month])
   const stickyRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLElement>(null)
+  const headRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  // Where the date row pins: under the legend and status bar on wide screens,
+  // straight under the top bar on phones (where those two don't pin).
+  const [headTop, setHeadTop] = useState(60)
 
   const data = sheet.data
   const today = data?.today ?? ''
@@ -63,7 +68,7 @@ export default function Attendance({ onToast }: Props) {
   const sharedStatus = selectedStatuses.size === 1 ? [...selectedStatuses][0] : null
 
   const summary = (() => {
-    if (!selected.length) return { title: 'Select cells to mark', detail: 'Click cells to select them. Double-click to deselect.' }
+    if (!selected.length) return { title: 'Select cells to mark', detail: 'Click cells to select them. Double-click a cell to remove its mark.' }
     if (selected.length === 1) {
       const [cell] = selected
       const checkIn = records.get(cellKey(cell))?.checkIn
@@ -76,23 +81,46 @@ export default function Attendance({ onToast }: Props) {
     return { title: `${selected.length} selected`, detail }
   })()
 
-  // On phones the editor is a bottom sheet. If it ends up covering the cell
-  // just picked, nudge the page so that cell stays in view.
+  useEffect(() => {
+    const topbar = document.querySelector<HTMLElement>('.topbar')
+    const measure = () => {
+      const block = stickyRef.current
+      if (!block) return
+      const style = getComputedStyle(block)
+      setHeadTop(style.position === 'sticky' ? parseFloat(style.top) + block.offsetHeight : topbar?.offsetHeight ?? 0)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (stickyRef.current) observer.observe(stickyRef.current)
+    if (topbar) observer.observe(topbar)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
+
+  // On phones the editor is a bottom sheet. If it covers the cell just picked,
+  // scroll that cell above it. Wide screens never scroll on a pick, so the two
+  // clicks of a double-click always land on the same cell.
   useEffect(() => {
     if (!lastPicked) return
     const frame = window.requestAnimationFrame(() => {
       const cell = document.querySelector(`[data-cell="${cellKey(lastPicked)}"]`)
       const editor = editorRef.current
-      if (!cell || !editor || !stickyRef.current) return
-      const isSheet = getComputedStyle(editor).position === 'fixed'
-      const top = isSheet ? (document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0) : stickyRef.current.getBoundingClientRect().bottom
-      const bottom = isSheet ? editor.getBoundingClientRect().top : window.innerHeight
-      const rect = cell.getBoundingClientRect()
-      if (rect.top < top + 8) window.scrollBy({ top: rect.top - top - 8 })
-      else if (rect.bottom > bottom - 8) window.scrollBy({ top: rect.bottom - bottom + 8 })
+      if (!cell || !editor || getComputedStyle(editor).position !== 'fixed') return
+      const overlap = cell.getBoundingClientRect().bottom - editor.getBoundingClientRect().top
+      if (overlap > -8) window.scrollBy({ top: overlap + 8 })
     })
     return () => window.cancelAnimationFrame(frame)
   }, [lastPicked])
+
+  // The date row and the grid scroll sideways together.
+  const syncScroll = (event: UIEvent<HTMLDivElement>) => {
+    const source = event.currentTarget
+    const other = source === headRef.current ? bodyRef.current : headRef.current
+    if (other && other.scrollLeft !== source.scrollLeft) other.scrollLeft = source.scrollLeft
+  }
 
   const clearSelection = () => {
     setSelected([])
@@ -101,11 +129,29 @@ export default function Attendance({ onToast }: Props) {
 
   // Click only ever adds, so the two clicks of a double-click can't undo each other.
   const pick = (cell: Cell) => {
+    setHolidayPanel(false)
+    if (selectedKeys.has(cellKey(cell))) return
     setSelected((current) => (current.some((item) => cellKey(item) === cellKey(cell)) ? current : [...current, cell]))
     setLastPicked(cell)
-    setHolidayPanel(false)
   }
   const unpick = (cell: Cell) => setSelected((current) => current.filter((item) => cellKey(item) !== cellKey(cell)))
+
+  // Double-click: drop the cell from the selection and erase its mark, if it has one.
+  // An unmarked working day then counts as present again; a future day goes blank.
+  const removeMark = async (cell: Cell) => {
+    unpick(cell)
+    const record = records.get(cellKey(cell))
+    if (!record) return
+    try {
+      await api.attendance.set({ email: cell.email, date: cell.date, status: null })
+      sheet.setData((current) => ({ ...current, records: current.records.filter((item) => cellKey(item) !== cellKey(cell)) }))
+      const label = attendanceMeta[record.status].label.toLowerCase()
+      const after = holidays.has(cell.date) ? ' The studio holiday applies.' : cell.date <= today ? ' It counts as present now.' : ''
+      onToast(`Removed ${cell.name}'s ${label} mark for ${fmtDay(cell.date)}.${after}`)
+    } catch (reason) {
+      onToast(errorMessage(reason))
+    }
+  }
 
   const goToMonth = (delta: number) => {
     if (!data) return
@@ -233,36 +279,42 @@ export default function Attendance({ onToast }: Props) {
       ) : null}
 
       {!data || sheet.loading || sheet.error ? <LoadState error={sheet.error} onRetry={sheet.reload} /> : (
-        <section className="card attendance-scroll" aria-label={`${monthLabel} attendance grid`}>
-          <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
-            <div className="att-head att-name att-sticky">Employee</div>
-            {days.map((date) => {
-              const day = parseKey(date)
-              return <div className={`att-head att-day ${isWeekend(date) ? 'att-cell--weekend' : ''} ${date === today ? 'att-cell--today' : ''}`} key={date}><span>{dayNames[day.getDay()]}</span><strong>{day.getDate()}</strong></div>
-            })}
-            {['P', 'W', 'H', 'L', 'A'].map((label) => <div className="att-head att-total" key={label}>{label}</div>)}
-
-            {rows.map(({ employee, totals }) => (
-              <div className="attendance-grid__row" style={{ display: 'contents' }} key={employee.email}>
-                <div className="att-name att-sticky">{employee.name}</div>
-                {days.map((date) => {
-                  const status = getStatus(employee.email, date)
-                  const cell = { email: employee.email, name: employee.name, date }
-                  const isSelected = selectedKeys.has(cellKey(cell))
-                  const handlers = { onClick: () => pick(cell), onDoubleClick: () => unpick(cell) }
-                  if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
-                  if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
-                  const meta = attendanceMeta[status]
-                  return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
-                })}
-                {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
-              </div>
-            ))}
+        <section className="card attendance-board" aria-label={`${monthLabel} attendance grid`}>
+          {/* The date row pins under the bar above while the rows scroll past it. */}
+          <div className="attendance-board__head" ref={headRef} style={{ top: headTop }} onScroll={syncScroll}>
+            <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
+              <div className="att-head att-name att-sticky">Employee</div>
+              {days.map((date) => {
+                const day = parseKey(date)
+                return <div className={`att-head att-day ${isWeekend(date) ? 'att-cell--weekend' : ''} ${date === today ? 'att-cell--today' : ''}`} key={date}><span>{dayNames[day.getDay()]}</span><strong>{day.getDate()}</strong></div>
+              })}
+              {['P', 'W', 'H', 'L', 'A'].map((label) => <div className="att-head att-total" key={label}>{label}</div>)}
+            </div>
+          </div>
+          <div className="attendance-scroll" ref={bodyRef} onScroll={syncScroll}>
+            <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
+              {rows.map(({ employee, totals }) => (
+                <div className="attendance-grid__row" style={{ display: 'contents' }} key={employee.email}>
+                  <div className="att-name att-sticky">{employee.name}</div>
+                  {days.map((date) => {
+                    const status = getStatus(employee.email, date)
+                    const cell = { email: employee.email, name: employee.name, date }
+                    const isSelected = selectedKeys.has(cellKey(cell))
+                    const handlers = { onClick: () => pick(cell), onDoubleClick: () => removeMark(cell) }
+                    if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
+                    if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
+                    const meta = attendanceMeta[status]
+                    return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
+                  })}
+                  {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
       {data && !rows.length && !sheet.loading ? <p className="empty-state">No active employees yet. Add them on the Employees page.</p> : null}
-      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to deselect it. Working days without a mark count as present. Weekends are not counted in totals.</p>
+      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Working days without a mark count as present. Weekends are not counted in totals.</p>
     </main>
   )
 }

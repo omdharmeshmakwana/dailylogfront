@@ -286,7 +286,12 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .holiday-panel h2 { margin-bottom: 3px; }
 .holiday-panel p { color: var(--muted); font-size: 13px; }
 .holiday-panel select { width: 220px; }
-.attendance-scroll { overflow-x: auto; border-radius: 14px; }
+/* overflow: clip rounds the corners without becoming a scroll box, so the date row can still pin to the page. */
+.attendance-board { overflow: clip; border-radius: 14px; }
+/* The date row pins under the legend and status bar (top is set in Attendance.tsx) and follows the grid's sideways scroll. */
+.attendance-board__head { position: sticky; z-index: 10; overflow-x: auto; scrollbar-width: none; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+.attendance-board__head::-webkit-scrollbar { display: none; }
+.attendance-scroll { overflow-x: auto; }
 .attendance-grid { min-width: 1404px; display: grid; font-variant-numeric: tabular-nums; }
 .att-head, .att-cell, .att-name, .att-total { height: 40px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--line); }
 .att-head { color: var(--muted); font-size: 12px; }
