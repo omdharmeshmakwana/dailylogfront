@@ -317,6 +317,9 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .att-mail__link { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; color: var(--muted); }
 .att-mail__link:hover { color: var(--accent); background: var(--accent-soft); }
 .att-day { flex-direction: column; line-height: 1.05; }
+/* Weekday dates are buttons that select the whole column. */
+.att-day__pick { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; line-height: 1.05; }
+.att-day__pick:hover { color: var(--ink); background: color-mix(in oklab, var(--accent) 12%, transparent); }
 .att-day strong { margin-top: 2px; font-family: 'Geist Mono Variable', monospace; font-weight: 550; }
 .att-cell { background: var(--surface); }
 .att-cell--today { background-color: var(--accent-soft); }

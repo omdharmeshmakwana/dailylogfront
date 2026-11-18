@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type UIEvent } from 'react'
 import { api, errorMessage } from '../api'
 import { attendanceMeta } from '../data'
 import { fmtDay, fmtMonth, isWeekend, monthDays, parseKey, shiftMonth, WEEKDAYS } from '../dates'
@@ -89,7 +89,7 @@ export default function Attendance({ onToast }: Props) {
   const sharedStatus = selectedStatuses.size === 1 ? [...selectedStatuses][0] : null
 
   const summary = (() => {
-    if (!selected.length) return { title: 'Select cells to mark', detail: 'Click cells to select them. Double-click a cell to remove its mark.' }
+    if (!selected.length) return { title: 'Select cells to mark', detail: 'Click a cell or a date. Shift-click to select a range. Double-click a cell to remove its mark.' }
     if (selected.length === 1) {
       const [cell] = selected
       const checkIn = records.get(cellKey(cell))?.checkIn
@@ -97,7 +97,8 @@ export default function Attendance({ onToast }: Props) {
     }
     const names = [...new Set(selected.map((cell) => cell.name))]
     const dates = [...new Set(selected.map((cell) => cell.date))]
-    const people = names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`
+    const everyone = dates.length === 1 && names.length > 1 && names.length === rows.length
+    const people = everyone ? 'Everyone' : names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`
     const detail = dates.length === 1 ? `${people} · ${dayLabel(dates[0])}` : names.length === 1 ? `${names[0]} · ${dates.length} days` : `${names.length} people · ${dates.length} days`
     return { title: `${selected.length} selected`, detail }
   })()
@@ -124,13 +125,69 @@ export default function Attendance({ onToast }: Props) {
 
   const clearSelection = () => setSelected([])
 
+  // Where the last plain click landed: a cell, or a date in the date row (email null).
+  const anchor = useRef<{ email: string | null; date: string } | null>(null)
+  // Shift-click adds the block between the anchor and the clicked spot. Shift-clicking
+  // again from the same anchor resizes that block instead of piling on, like a
+  // spreadsheet; anything picked before the first Shift-click stays picked.
+  const range = useRef<{ before: Cell[]; result: Cell[] } | null>(null)
+  const setAnchor = (email: string | null, date: string) => {
+    anchor.current = { email, date }
+    range.current = null
+  }
+
   // Click only ever adds, so the two clicks of a double-click can't undo each other.
   const pick = (cell: Cell) => {
     setHolidayPanel(false)
+    setAnchor(cell.email, cell.date)
     if (selectedKeys.has(cellKey(cell))) return
     setSelected((current) => (current.some((item) => cellKey(item) === cellKey(cell)) ? current : [...current, cell]))
   }
   const unpick = (cell: Cell) => setSelected((current) => current.filter((item) => cellKey(item) !== cellKey(cell)))
+
+  const workdaysBetween = (from: string, to: string) => {
+    const [start, end] = from <= to ? [from, to] : [to, from]
+    return days.filter((date) => date >= start && date <= end && !isWeekend(date))
+  }
+  const selectBlock = (cells: Cell[]) => {
+    setHolidayPanel(false)
+    const before = range.current && range.current.result === selected ? range.current.before : selected
+    const have = new Set(before.map(cellKey))
+    const result = [...before, ...cells.filter((cell) => !have.has(cellKey(cell)))]
+    range.current = { before, result }
+    setSelected(result)
+  }
+  const pickRange = (cell: Cell) => {
+    const from = anchor.current
+    const start = from?.email ? rows.findIndex(({ employee }) => employee.email === from.email) : -1
+    const end = rows.findIndex(({ employee }) => employee.email === cell.email)
+    if (!from || start < 0 || end < 0) return pick(cell)
+    const people = rows.slice(Math.min(start, end), Math.max(start, end) + 1)
+    const dates = workdaysBetween(from.date, cell.date)
+    selectBlock(people.flatMap(({ employee }) => dates.map((date) => ({ email: employee.email, name: employee.name, date }))))
+  }
+  const pickColumns = (date: string) => {
+    const from = anchor.current
+    if (!from) return toggleColumn(date)
+    const dates = workdaysBetween(from.date, date)
+    selectBlock(dates.flatMap((day) => rows.map(({ employee }) => ({ email: employee.email, name: employee.name, date: day }))))
+  }
+
+  // Clicking a date picks that day for every employee; clicking it again drops the column.
+  const columnPicked = (date: string) => rows.length > 0 && rows.every(({ employee }) => selectedKeys.has(`${employee.email}|${date}`))
+  const toggleColumn = (date: string) => {
+    setHolidayPanel(false)
+    setAnchor(null, date)
+    if (columnPicked(date)) {
+      setSelected((current) => current.filter((item) => item.date !== date))
+      return
+    }
+    const column = rows.map(({ employee }) => ({ email: employee.email, name: employee.name, date }))
+    setSelected((current) => {
+      const have = new Set(current.map(cellKey))
+      return [...current, ...column.filter((cell) => !have.has(cellKey(cell)))]
+    })
+  }
 
   // Double-click: drop the cell from the selection and erase its mark, if it has one.
   // An unmarked working day then counts as present again; a future day goes blank.
@@ -153,6 +210,8 @@ export default function Attendance({ onToast }: Props) {
     if (!data) return
     setMonth(shiftMonth(month || data.month, delta))
     clearSelection()
+    anchor.current = null
+    range.current = null
     setHolidayPanel(false)
     setNoteFor(null)
   }
@@ -211,6 +270,7 @@ export default function Attendance({ onToast }: Props) {
     const names = new Set(cells.map((cell) => cell.name))
     const dates = new Set(cells.map((cell) => cell.date))
     if (cells.length === 1) onToast(`${cells[0].name} marked ${label} for ${fmtDay(cells[0].date)}`)
+    else if (dates.size === 1 && names.size === rows.length) onToast(`Everyone marked ${label} for ${fmtDay(cells[0].date)}`)
     else if (dates.size === 1) onToast(`${cells.length} people marked ${label} for ${fmtDay(cells[0].date)}`)
     else if (names.size === 1) onToast(`${cells[0].name} marked ${label} for ${cells.length} days`)
     else onToast(`${cells.length} cells marked ${label}`)
@@ -307,14 +367,23 @@ export default function Attendance({ onToast }: Props) {
       ) : null}
 
       {!data || sheet.loading || sheet.error ? <LoadState error={sheet.error} onRetry={sheet.reload} /> : (
-        <section className="card attendance-board" aria-label={`${monthLabel} attendance grid`}>
+        // preventDefault on Shift + mouse down stops the browser highlighting the text between two clicks.
+        <section className="card attendance-board" aria-label={`${monthLabel} attendance grid`} onMouseDown={(event) => { if (event.shiftKey) event.preventDefault() }}>
           {/* The date row pins under the bar above while the rows scroll past it. */}
           <div className="attendance-board__head" ref={headRef} style={{ top: pins.head }} onScroll={syncScroll}>
             <div className="attendance-grid" style={gridStyle}>
               <div className="att-head att-name att-sticky">Employee</div>
               {days.map((date) => {
                 const day = parseKey(date)
-                return <div className={`att-head att-day ${isWeekend(date) ? 'att-cell--weekend' : ''} ${date === today ? 'att-cell--today' : ''}`} key={date}><span>{dayNames[day.getDay()]}</span><strong>{day.getDate()}</strong></div>
+                const weekend = isWeekend(date)
+                const label = <><span>{dayNames[day.getDay()]}</span><strong>{day.getDate()}</strong></>
+                if (weekend) return <div className="att-head att-day att-cell--weekend" key={date}>{label}</div>
+                const picked = columnPicked(date)
+                return (
+                  <div className={`att-head att-day ${date === today ? 'att-cell--today' : ''} ${picked ? 'att-cell--selected' : ''}`} key={date}>
+                    <button className="att-day__pick" type="button" aria-pressed={picked} aria-label={`${picked ? 'Deselect' : 'Select'} everyone on ${dayLabel(date)}`} title={`${picked ? 'Deselect' : 'Select'} everyone on ${dayLabel(date)}`} onClick={(event) => (event.shiftKey ? pickColumns(date) : toggleColumn(date))}>{label}</button>
+                  </div>
+                )
               })}
               {['P', 'W', 'H', 'L', 'A'].map((label) => <div className="att-head att-total" key={label}>{label}</div>)}
               <div className="att-head att-mail">Mail</div>
@@ -341,7 +410,7 @@ export default function Attendance({ onToast }: Props) {
                     const status = getStatus(employee.email, date)
                     const cell = { email: employee.email, name: employee.name, date }
                     const isSelected = selectedKeys.has(cellKey(cell))
-                    const handlers = { onClick: () => pick(cell), onDoubleClick: () => removeMark(cell) }
+                    const handlers = { onClick: (event: MouseEvent) => (event.shiftKey ? pickRange(cell) : pick(cell)), onDoubleClick: () => removeMark(cell) }
                     if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
                     if (status === 'future') return <div className={`att-cell ${isSelected ? 'att-cell--selected' : ''}`} key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
                     const meta = attendanceMeta[status]
@@ -391,7 +460,7 @@ export default function Attendance({ onToast }: Props) {
         </section>
       )}
       {data && !rows.length && !sheet.loading ? <p className="empty-state">No active employees yet. Add them on the Employees page.</p> : null}
-      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Use the pencil next to a name to add a note for the month, and the Mail column to email someone. Working days without a mark count as present. Weekends are not counted in totals.</p>
+      <p className="page-hint">Click cells to select as many as you like, or click a date to select everyone that day, then pick a status. Shift-click another cell to select the whole block between it and the last one you clicked, or Shift-click a date to select every day in between. Double-click a cell to remove its mark. Use the pencil next to a name to add a note for the month, and the Mail column to email someone. Working days without a mark count as present. Weekends are not counted in totals.</p>
     </main>
   )
 }
