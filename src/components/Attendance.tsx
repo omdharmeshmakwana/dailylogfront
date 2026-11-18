@@ -19,6 +19,14 @@ const cellKey = (cell: { email: string; date: string }) => `${cell.email}|${cell
 const dayLabel = (date: string) => `${WEEKDAYS[parseKey(date).getDay()]}, ${fmtDay(date)}`
 const NOTE_MAX = 2000
 
+// Compose icon (pencil on a page) for the Mail column, so it reads differently from the note pencil.
+const ComposeIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+  </svg>
+)
+
 const PencilIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M12 20h9" />
@@ -52,6 +60,8 @@ export default function Attendance({ onToast }: Props) {
   const holidays = useMemo(() => new Set(data?.holidays ?? []), [data])
   const notes = useMemo(() => new Map((data?.notes ?? []).map((item) => [item.email, item.note])), [data])
   const weekdays = days.filter((date) => !isWeekend(date))
+  // Name, one column per day, five totals, then Mail. The date row and the grid share it.
+  const gridStyle = { gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px) 48px` }
   const monthLabel = month ? fmtMonth(month) : data ? fmtMonth(data.month) : ''
   const selectedKeys = new Set(selected.map(cellKey))
 
@@ -300,17 +310,18 @@ export default function Attendance({ onToast }: Props) {
         <section className="card attendance-board" aria-label={`${monthLabel} attendance grid`}>
           {/* The date row pins under the bar above while the rows scroll past it. */}
           <div className="attendance-board__head" ref={headRef} style={{ top: pins.head }} onScroll={syncScroll}>
-            <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
+            <div className="attendance-grid" style={gridStyle}>
               <div className="att-head att-name att-sticky">Employee</div>
               {days.map((date) => {
                 const day = parseKey(date)
                 return <div className={`att-head att-day ${isWeekend(date) ? 'att-cell--weekend' : ''} ${date === today ? 'att-cell--today' : ''}`} key={date}><span>{dayNames[day.getDay()]}</span><strong>{day.getDate()}</strong></div>
               })}
               {['P', 'W', 'H', 'L', 'A'].map((label) => <div className="att-head att-total" key={label}>{label}</div>)}
+              <div className="att-head att-mail">Mail</div>
             </div>
           </div>
           <div className="attendance-scroll" ref={bodyRef} onScroll={syncScroll}>
-            <div className="attendance-grid" style={{ gridTemplateColumns: `150px repeat(${days.length}, 34px) repeat(5, 40px)` }}>
+            <div className="attendance-grid" style={gridStyle}>
               {rows.map(({ employee, totals }) => (
                 <div className="attendance-grid__row" style={{ display: 'contents' }} key={employee.email}>
                   <div className="att-name att-sticky">
@@ -332,11 +343,14 @@ export default function Attendance({ onToast }: Props) {
                     const isSelected = selectedKeys.has(cellKey(cell))
                     const handlers = { onClick: () => pick(cell), onDoubleClick: () => removeMark(cell) }
                     if (status === 'weekend') return <div className="att-cell att-cell--weekend" key={date} />
-                    if (status === 'future') return <div className="att-cell" key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
+                    if (status === 'future') return <div className={`att-cell ${isSelected ? 'att-cell--selected' : ''}`} key={date}><button className={`att-future ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`Mark ${employee.name} on ${fmtDay(date)}`} /></div>
                     const meta = attendanceMeta[status]
-                    return <div className={`att-cell ${date === today ? 'att-cell--today' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
+                    return <div className={`att-cell ${date === today ? 'att-cell--today' : ''} ${isSelected ? 'att-cell--selected' : ''}`} key={date}><button className={`att att--${meta.tone} ${isSelected ? 'att--selected' : ''}`} type="button" data-cell={cellKey(cell)} aria-pressed={isSelected} {...handlers} aria-label={`${employee.name}, ${fmtDay(date)}: ${meta.label}`}>{meta.short}</button></div>
                   })}
                   {([['present', totals.present], ['wfh', totals.wfh], ['half', totals.half], ['leave', totals.leave], ['absent', totals.absent]] as const).map(([status, value]) => <div className={`att-total att-total--${attendanceMeta[status].tone}`} key={status}>{value}</div>)}
+                  <div className="att-mail">
+                    <a className="att-mail__link" href={`mailto:${employee.email}`} title={`Email ${employee.name} · ${employee.email}`} aria-label={`Email ${employee.name} at ${employee.email}`}><ComposeIcon /></a>
+                  </div>
                   {noteFor === employee.email ? (
                     <div className="att-note-row">
                       <div className="att-note">
@@ -377,7 +391,7 @@ export default function Attendance({ onToast }: Props) {
         </section>
       )}
       {data && !rows.length && !sheet.loading ? <p className="empty-state">No active employees yet. Add them on the Employees page.</p> : null}
-      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Use the pencil next to a name to add a note for the month. Working days without a mark count as present. Weekends are not counted in totals.</p>
+      <p className="page-hint">Click cells to select as many as you like, then pick a status. Double-click a cell to remove its mark. Use the pencil next to a name to add a note for the month, and the Mail column to email someone. Working days without a mark count as present. Weekends are not counted in totals.</p>
     </main>
   )
 }

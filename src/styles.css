@@ -271,7 +271,6 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .attendance-legend .att { width: 20px; height: 20px; border-radius: 4px; }
 .att--ok { color: var(--ok); background: var(--ok-soft); }.att--danger { color: var(--danger); background: var(--danger-soft); }.att--warn { color: var(--warn); background: var(--warn-soft); }.att--info { color: var(--info); background: var(--info-soft); }.att--violet { color: var(--violet); background: var(--violet-soft); }.att--hol { color: var(--hol); background: var(--hol-soft); }
 .att--weekend, .att-cell--weekend { background: repeating-linear-gradient(135deg, var(--weekend) 0 4px, var(--line) 4px 5px); } /* taste-skill-ignore: attendance calendars use a hatch to distinguish weekends from working days. */
-.att--selected { outline: 2px solid var(--ink); outline-offset: 1px; }
 .attendance-editor { min-height: 70px; padding: 12px 14px 12px 16px; display: grid; grid-template-columns: minmax(150px, auto) 1fr auto; align-items: center; gap: 18px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--surface); }
 /* One line each, so the bar never changes height as cells are picked and the grid never shifts under the pointer. */
 .attendance-editor > div:first-child { display: flex; flex-direction: column; min-width: 0; }
@@ -294,7 +293,7 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .attendance-board__head { position: sticky; z-index: 10; overflow-x: auto; scrollbar-width: none; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
 .attendance-board__head::-webkit-scrollbar { display: none; }
 .attendance-scroll { overflow-x: auto; }
-.attendance-grid { min-width: 1404px; display: grid; font-variant-numeric: tabular-nums; }
+.attendance-grid { min-width: max-content; display: grid; font-variant-numeric: tabular-nums; }
 .att-head, .att-cell, .att-name, .att-total { height: 40px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--line); }
 .att-head { color: var(--muted); font-size: 12px; }
 .att-name { justify-content: flex-start; gap: 4px; padding: 0 6px 0 14px; background: var(--surface); border-right: 1px solid var(--line); font-size: 13px; font-weight: 550; }
@@ -312,10 +311,17 @@ label, .field-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
 .att-note__actions small { margin-right: auto; color: var(--muted); font-size: 12px; }
 .att-sticky { position: sticky; left: 0; z-index: 4; }
 .att-head.att-sticky { z-index: 5; }
+/* Mail column: pinned to the right edge, the way names are pinned to the left. */
+.att-mail { height: 40px; position: sticky; right: 0; z-index: 4; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); background: var(--surface); }
+.att-head.att-mail { z-index: 5; color: var(--muted); font-size: 12px; }
+.att-mail__link { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; color: var(--muted); }
+.att-mail__link:hover { color: var(--accent); background: var(--accent-soft); }
 .att-day { flex-direction: column; line-height: 1.05; }
 .att-day strong { margin-top: 2px; font-family: 'Geist Mono Variable', monospace; font-weight: 550; }
 .att-cell { background: var(--surface); }
 .att-cell--today { background-color: var(--accent-soft); }
+/* Selected cells get a teal tint (deeper than today's column) instead of an outline. */
+.att-cell--selected, .att-cell--today.att-cell--selected { background: color-mix(in oklab, var(--accent) 30%, var(--surface)); }
 .att-total { border-left: 1px solid var(--line); background: var(--surface); font-family: 'Geist Mono Variable', monospace; font-size: 12px; }
 .att-total--ok { color: var(--ok); }.att-total--danger { color: var(--danger); }.att-total--warn { color: var(--warn); }.att-total--info { color: var(--info); }.att-total--violet { color: var(--violet); }
 .att-future { width: 28px; height: 28px; border: 1px dashed var(--line-2); border-radius: 6px; background: transparent; }
